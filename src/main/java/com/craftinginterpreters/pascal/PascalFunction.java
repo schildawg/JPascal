@@ -36,7 +36,7 @@ public class PascalFunction implements PascalCallable {
      * @return number of parameters.
      */
     @Override
-    public int aritity() {
+    public int arity() {
         return declaration.params.size();
     }
 

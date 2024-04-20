@@ -3,6 +3,6 @@ package com.craftinginterpreters.pascal;
 import java.util.List;
 
 interface PascalCallable {
-    int aritity();
+    int arity();
     Object call(Interpreter interpreter, List<Object> arguments);
 }

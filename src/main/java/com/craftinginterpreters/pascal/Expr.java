@@ -10,10 +10,12 @@ abstract class Expr {
         R visitGetExpr(Get expr);
         R visitGroupingExpr(Grouping expr);
         R visitLiteralExpr(Literal expr);
+        R visitMapExpr(Map expr);
         R visitLogicalExpr(Logical expr);
         R visitVariableExpr(Variable expr);
         R visitSetExpr(Set expr);
         R visitSuperExpr(Super expr);
+        R visitSubscriptExpr(Subscript expr);
         R visitThisExpr(This expr);
         R visitUnaryExpr(Unary expr);
     }
@@ -66,6 +68,23 @@ abstract class Expr {
         final List<Expr> arguments;
     }
 
+    static class Subscript extends Expr {
+        Subscript(Token token, Expr expr, Expr index) {
+            this.token = token;
+            this.expr = expr;
+            this.index = index;
+        }
+
+        @Override
+        <R> R accept(Visitor<R> visitor) {
+            return visitor.visitSubscriptExpr(this);
+        }
+
+        final Token token;
+        final Expr expr;
+        final Expr index;
+    }
+
     static class Get extends Expr {
         Get(Expr object, Token name) {
             this.object = object;
@@ -105,6 +124,19 @@ abstract class Expr {
         }
 
         final Object value;
+    }
+
+    static class Map extends Expr {
+        Map(java.util.Map<Expr, Expr> value) {
+            this.value = value;
+        }
+
+        @Override
+        <R> R accept(Visitor<R> visitor) {
+            return visitor.visitMapExpr(this);
+        }
+
+        final java.util.Map<Expr, Expr> value;
     }
 
     static class Logical extends Expr {

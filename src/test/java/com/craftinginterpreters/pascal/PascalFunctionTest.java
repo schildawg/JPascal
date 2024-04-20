@@ -35,7 +35,7 @@ public class PascalFunctionTest {
     void testCreate() {
         var function = makeFunction();
 
-        assertEquals(1, function.aritity());
+        assertEquals(1, function.arity());
     }
 
     // Tests PascalFunction.toString()
@@ -54,9 +54,9 @@ public class PascalFunctionTest {
         var code = """
            function fib(n);
            begin
-               if n < 2 then exit n;
+               if n < 2.0 then exit n;
 
-               exit fib(n - 1) + fib(n - 2);
+               exit fib(n - 1.0) + fib(n - 2.0);
            end""";
 
         var scanner = new Scanner(code);

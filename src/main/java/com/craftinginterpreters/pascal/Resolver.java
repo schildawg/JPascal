@@ -48,6 +48,15 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Void visitEnumStmt(Stmt.Enum stmt) {
+        for (var value : stmt.values) {
+            declare(value);
+            define(value);
+        }
+        return null;
+    }
+
+    @Override
     public Void visitClassStmt(Stmt.Class stmt) {
         ClassType enclosingClass = currentClass;
         currentClass = ClassType.CLASS;
@@ -191,6 +200,11 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Void visitMapExpr(Expr.Map expr) {
+        return null;
+    }
+
+    @Override
     public Void visitLogicalExpr(Expr.Logical expr) {
         resolve(expr.left);
         resolve(expr.right);
@@ -231,6 +245,14 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             Pascal.error(expr.keyword, "Can't use 'super' in a class with no superclass.");
         }
         resolveLocal(expr, expr.keyword);
+        return null;
+    }
+
+    @Override
+    public Void visitSubscriptExpr(Expr.Subscript expr) {
+        resolve(expr.expr);
+        resolve(expr.index);
+
         return null;
     }
 

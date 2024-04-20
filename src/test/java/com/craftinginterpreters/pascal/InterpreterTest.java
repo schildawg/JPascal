@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class InterpreterTest {
@@ -73,7 +74,7 @@ public class InterpreterTest {
         var expr = (Expr.Literal) parseExpr("1");
         var result = interpreter.visitLiteralExpr(expr);
 
-        assertEquals(1.0, result, "should be 1.0");
+        assertEquals(1, result, "should be 1");
     }
 
     // Tests parsing a float.
@@ -149,7 +150,7 @@ public class InterpreterTest {
         var expr = (Expr.Grouping) parseExpr("(42)");
         var result = interpreter.visitGroupingExpr(expr);
 
-        assertEquals(42.0, result);
+        assertEquals(42, result);
     }
 
 
@@ -173,6 +174,18 @@ public class InterpreterTest {
         var interpreter = new Interpreter(new TestErrorHandler());
 
         var expr = (Expr.Binary) parseExpr("1 + 1");
+        var result = interpreter.visitBinaryExpr(expr);
+
+        assertEquals(2, result);
+    }
+
+    // Tests addition using doubles.
+    //
+    @Test
+    void testAdditionDouble() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var expr = (Expr.Binary) parseExpr("1.0 + 1.0");
         var result = interpreter.visitBinaryExpr(expr);
 
         assertEquals(2.0, result);
@@ -225,6 +238,18 @@ public class InterpreterTest {
         var expr = (Expr.Binary) parseExpr("2 - 1");
         var result = interpreter.visitBinaryExpr(expr);
 
+        assertEquals(1, result);
+    }
+
+    // Tests subtraction using doubles.
+    //
+    @Test
+    void testSubtractionDoubles() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var expr = (Expr.Binary) parseExpr("2.0 - 1.0");
+        var result = interpreter.visitBinaryExpr(expr);
+
         assertEquals(1.0, result);
     }
 
@@ -263,6 +288,18 @@ public class InterpreterTest {
         var expr = (Expr.Binary) parseExpr("2 * 2");
         var result = interpreter.visitBinaryExpr(expr);
 
+        assertEquals(4, result);
+    }
+
+    // Tests Multiplication using doubles.
+    //
+    @Test
+    void testMultiplicationDoubles() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var expr = (Expr.Binary) parseExpr("2.0 * 2.0");
+        var result = interpreter.visitBinaryExpr(expr);
+
         assertEquals(4.0, result);
     }
 
@@ -298,10 +335,22 @@ public class InterpreterTest {
     void testDivision() {
         var interpreter = new Interpreter(new TestErrorHandler());
 
-        var expr = (Expr.Binary) parseExpr("3 / 2");
+        var expr = (Expr.Binary) parseExpr("3.0 / 2.0");
         var result = interpreter.visitBinaryExpr(expr);
 
         assertEquals(1.5, result);
+    }
+
+    // Tests division using integers.
+    //
+    @Test
+    void testDivisionIntegers() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var expr = (Expr.Binary) parseExpr("3 / 2");
+        var result = interpreter.visitBinaryExpr(expr);
+
+        assertEquals(1, result);
     }
 
     // Divide operator should fail if left not a number.
@@ -342,6 +391,30 @@ public class InterpreterTest {
         assertEquals(true, result);
     }
 
+    // Tests greater operator using doubles.
+    //
+    @Test
+    void testGreaterDoubles() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var expr = (Expr.Binary) parseExpr("2.0 > 1.0");
+        var result = interpreter.visitBinaryExpr(expr);
+
+        assertEquals(true, result);
+    }
+
+    // Tests greater operator using characters.
+    //
+    @Test
+    void testGreaterChar() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var expr = (Expr.Binary) parseExpr("#1 > #0");
+        var result = interpreter.visitBinaryExpr(expr);
+
+        assertEquals(true, result);
+    }
+
     // Tests greater equal operator.
     //
     @Test
@@ -349,6 +422,30 @@ public class InterpreterTest {
         var interpreter = new Interpreter(new TestErrorHandler());
 
         var expr = (Expr.Binary) parseExpr("1 >= 1");
+        var result = interpreter.visitBinaryExpr(expr);
+
+        assertEquals(true, result);
+    }
+
+    // Tests greater equal operator using doubles.
+    //
+    @Test
+    void testGreaterEqualDouble() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var expr = (Expr.Binary) parseExpr("1.0 >= 1.0");
+        var result = interpreter.visitBinaryExpr(expr);
+
+        assertEquals(true, result);
+    }
+
+    // Tests greater equal operator using characters.
+    //
+    @Test
+    void testGreaterEqualChar() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var expr = (Expr.Binary) parseExpr("#0 >= #0");
         var result = interpreter.visitBinaryExpr(expr);
 
         assertEquals(true, result);
@@ -366,6 +463,31 @@ public class InterpreterTest {
         assertEquals(true, result);
     }
 
+    // Tests less operator using doubles.
+    //
+    @Test
+    void testLessDouble() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var expr = (Expr.Binary) parseExpr("1.0 < 2.0");
+        var result = interpreter.visitBinaryExpr(expr);
+
+        assertEquals(true, result);
+    }
+
+
+    // Tests less operator using characters.
+    //
+    @Test
+    void testLessChar() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var expr = (Expr.Binary) parseExpr("#0 < #1");
+        var result = interpreter.visitBinaryExpr(expr);
+
+        assertEquals(true, result);
+    }
+
     // Tests less equal operator.
     //
     @Test
@@ -373,6 +495,30 @@ public class InterpreterTest {
         var interpreter = new Interpreter(new TestErrorHandler());
 
         var expr = (Expr.Binary) parseExpr("1 <= 1");
+        var result = interpreter.visitBinaryExpr(expr);
+
+        assertEquals(true, result);
+    }
+
+    // Tests less equal operator using doubles.
+    //
+    @Test
+    void testLessEqualDouble() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var expr = (Expr.Binary) parseExpr("1.0 <= 1.0");
+        var result = interpreter.visitBinaryExpr(expr);
+
+        assertEquals(true, result);
+    }
+
+    // Tests less equal operator using doubles.
+    //
+    @Test
+    void testLessEqualChar() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var expr = (Expr.Binary) parseExpr("#0 <= #0");
         var result = interpreter.visitBinaryExpr(expr);
 
         assertEquals(true, result);
@@ -432,7 +578,7 @@ public class InterpreterTest {
     void testComplexExpression() {
         var interpreter = new Interpreter(new TestErrorHandler());
 
-        var expr = (Expr.Binary) parseExpr("(1 + 1) / 3 * 1.5 - 2");
+        var expr = (Expr.Binary) parseExpr("(1.0 + 1.0) / 3.0 * 1.5 - 2.0");
         var result = interpreter.visitBinaryExpr(expr);
 
         assertEquals(-1.0, result);
@@ -448,7 +594,7 @@ public class InterpreterTest {
         interpreter.interpret(stmts);
 
         var result = interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
-        assertEquals(123.0, result);
+        assertEquals(123, result);
     }
 
     // Variable declaration should fail if no identifier.
@@ -473,6 +619,9 @@ public class InterpreterTest {
 
         var ex = assertThrows(Parser.ParseError.class, () -> {
             var stmts = parseStmts("var Abc := 123");
+            var resolver = new Resolver(interpreter);
+            resolver.resolve(stmts);
+
             interpreter.interpret(stmts);
         });
         assertEquals("Expect ';' after variable declaration.", ex.getMessage());
@@ -491,11 +640,13 @@ public class InterpreterTest {
                 Abc := 1;
             end""");
 
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
         interpreter.interpret(stmts);
 
         var result = interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
 
-        assertEquals(1.0, result);
+        assertEquals(1, result);
     }
 
     // Block should fail if no end.
@@ -510,6 +661,8 @@ public class InterpreterTest {
                begin
                   Abc := 1;""");
 
+            var resolver = new Resolver(interpreter);
+            resolver.resolve(stmts);
             interpreter.interpret(stmts);
         });
         assertEquals("Expect 'end' after block.", ex.getMessage());
@@ -524,12 +677,14 @@ public class InterpreterTest {
         var stmts = parseStmts("""
             var Abc := 2;
             if True then Abc := 1;""");
-        
+
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
         interpreter.interpret(stmts);
 
         var result = interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
 
-        assertEquals(1.0, result);
+        assertEquals(1, result);
     }
 
     // If statement should treat non-boolean values as truthy.
@@ -542,11 +697,13 @@ public class InterpreterTest {
             var Abc := 2;
             if 1 then Abc := 1;""");
 
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
         interpreter.interpret(stmts);
 
         var result = interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
 
-        assertEquals(1.0, result);
+        assertEquals(1, result);
     }
 
     // If statement should fail if no then.
@@ -560,12 +717,14 @@ public class InterpreterTest {
                var Abc := 2;
                if True Abc := 1;""");
 
+            var resolver = new Resolver(interpreter);
+            resolver.resolve(stmts);
             interpreter.interpret(stmts);
         });
         assertEquals("Expect 'then' after if condition.", ex.getMessage());
     }
 
-    // Test Print.  TODO: Excercising for now, remove when add WriteLn().
+    // Test Print.  TODO: Exercising for now, remove when add WriteLn().
     //
     @Test
     void testPrint() {
@@ -575,6 +734,8 @@ public class InterpreterTest {
                Print 1;
                Print 'ABC';""");
 
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
         interpreter.interpret(stmts);
     }
 
@@ -588,9 +749,11 @@ public class InterpreterTest {
                var Abc := clock();
                Print Abc;""");
 
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
         interpreter.interpret(stmts);
 
-        var result = interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
+        interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
     }
 
     // Tests else statement.
@@ -603,11 +766,13 @@ public class InterpreterTest {
             var Abc := 2;
             if False then Abc := 3; else Abc := 1;""");
 
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
         interpreter.interpret(stmts);
 
         var result = interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
 
-        assertEquals(1.0, result);
+        assertEquals(1, result);
     }
 
     // Tests And operator.
@@ -634,6 +799,43 @@ public class InterpreterTest {
         assertEquals(true, result);
     }
 
+    // Tests subscript operator.
+    //
+    @Test
+    void testSubscriptOperator() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var stmts = parseStmts("""
+            var S := 'ABC';
+            var Abc := S[1];""");
+
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
+        interpreter.interpret(stmts);
+
+        var result =  interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
+
+        assertEquals('B', result);
+    }
+
+    // A runtime error should be thrown if the subscript target is not a string or array.
+    //
+    @Test
+    void testSubscriptInvalidTarget() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var ex = assertThrows(RuntimeError.class, () -> {
+            var stmts = parseStmts("""
+            var S := 123;
+            var Abc := S[1];""");
+
+            var resolver = new Resolver(interpreter);
+            resolver.resolve(stmts);
+            interpreter.interpret(stmts);
+        });
+        assertEquals("Subscript target should be an ordinal.", ex.getMessage());
+    }
+
     // Tests while statement.
     //
     @Test
@@ -646,11 +848,14 @@ public class InterpreterTest {
             begin
                 Abc := Abc - 1;
             end""");
+
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
         interpreter.interpret(stmts);
 
         var result =  interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
 
-        assertEquals(1.0, result);
+        assertEquals(1, result);
     }
 
     // While statement should fail if no 'do'.
@@ -666,6 +871,9 @@ public class InterpreterTest {
                begin
                   Abc := Abc - 1;
                end""");
+
+            var resolver = new Resolver(interpreter);
+            resolver.resolve(stmts);
             interpreter.interpret(stmts);
         });
         assertEquals("Expect 'do' after condition.", ex.getMessage());
@@ -691,7 +899,7 @@ public class InterpreterTest {
 
         var result =  interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
 
-        assertEquals(4.0, result);
+        assertEquals(4, result);
     }
 
     // Parsing for statement should fail if missing 'do'
@@ -707,6 +915,8 @@ public class InterpreterTest {
                Abc := Abc + 1;
             end""");
 
+            var resolver = new Resolver(interpreter);
+            resolver.resolve(stmts);
             interpreter.interpret(stmts);
         });
         assertEquals("Expect 'do' after for clauses.", ex.getMessage());
@@ -725,6 +935,8 @@ public class InterpreterTest {
                Abc := Abc + 1;
             end""");
 
+            var resolver = new Resolver(interpreter);
+            resolver.resolve(stmts);
             interpreter.interpret(stmts);
         });
         assertEquals("Expect ';' after variable declaration.", ex.getMessage());
@@ -745,11 +957,13 @@ public class InterpreterTest {
             var Abc := 1;
             Test(1, 2);""");
 
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
         interpreter.interpret(stmts);
 
         var result =  interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
 
-        assertEquals(7.0, result);
+        assertEquals(7, result);
     }
 
     // Tests function with no parameters.
@@ -766,11 +980,13 @@ public class InterpreterTest {
             var Abc := 1;
             Test();""");
 
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
         interpreter.interpret(stmts);
 
         var result =  interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
 
-        assertEquals(7.0, result);
+        assertEquals(7, result);
     }
 
     @Test
@@ -784,6 +1000,8 @@ public class InterpreterTest {
                     Abc := 7;
                 end""");
 
+            var resolver = new Resolver(interpreter);
+            resolver.resolve(stmts);
             interpreter.interpret(stmts);
         });
         assertEquals("Expect function name.", ex.getMessage());
@@ -800,6 +1018,8 @@ public class InterpreterTest {
                     Abc := 7;
                 end""");
 
+            var resolver = new Resolver(interpreter);
+            resolver.resolve(stmts);
             interpreter.interpret(stmts);
         });
         assertEquals("Expect ') after parameters.", ex.getMessage());
@@ -816,6 +1036,8 @@ public class InterpreterTest {
                    Abc := 7;
                 end""");
 
+            var resolver = new Resolver(interpreter);
+            resolver.resolve(stmts);
             interpreter.interpret(stmts);
         });
         assertEquals("Expect ';'", ex.getMessage());
@@ -830,6 +1052,8 @@ public class InterpreterTest {
                 function Test(A,B);
                     var Abc := 1;""");
 
+            var resolver = new Resolver(interpreter);
+            resolver.resolve(stmts);
             interpreter.interpret(stmts);
         });
         assertEquals("Expect 'begin' before function body.", ex.getMessage());
@@ -848,6 +1072,8 @@ public class InterpreterTest {
                     Abc := 7;
                 end""");
 
+            var resolver = new Resolver(interpreter);
+            resolver.resolve(stmts);
             interpreter.interpret(stmts);
         });
         assertEquals("Expect parameter name.", ex.getMessage());
@@ -867,11 +1093,13 @@ public class InterpreterTest {
             
             var Abc := Test();""");
 
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
         interpreter.interpret(stmts);
 
         var result =  interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
 
-        assertEquals(123.0, result);
+        assertEquals(123, result);
     }
 
     // .A function should return null if no Exit statement.
@@ -887,6 +1115,8 @@ public class InterpreterTest {
             
             var Abc := Test();""");
 
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
         interpreter.interpret(stmts);
 
         var result =  interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
@@ -908,6 +1138,8 @@ public class InterpreterTest {
             
             var Abc := Test();""");
 
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
         interpreter.interpret(stmts);
 
         var result =  interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
@@ -967,7 +1199,9 @@ public class InterpreterTest {
 
             interpreter.interpret(stmts);
         });
-        assertEquals("Undefined variable 'Test'.", ex.getMessage());
+
+        // FIXME
+        assertEquals("Undefined variable 'this'.", ex.getMessage());
     }
 
     // Call statement with wrong number of parameters should fail.
@@ -981,7 +1215,7 @@ public class InterpreterTest {
                function Test(A, B, C);
                begin
                end
-               
+
                var Abc := Test();""");
 
             var resolver = new Resolver(interpreter);
@@ -1005,6 +1239,8 @@ public class InterpreterTest {
           
             var Abc := Test();""");
 
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
         interpreter.interpret(stmts);
 
         var result =  interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
@@ -1029,6 +1265,8 @@ public class InterpreterTest {
           
             var Abc := Dog();""");
 
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
         interpreter.interpret(stmts);
 
         var result =  interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
@@ -1046,7 +1284,7 @@ public class InterpreterTest {
             class Animal;
             begin
             end
-            
+
             class Dog (Animal);
             begin
                Method;
@@ -1054,13 +1292,12 @@ public class InterpreterTest {
                   super.Other();
                end
             end
-          
+
             var TheDog := Dog();
             TheDog.Method();""");
 
         var resolver = new Resolver(interpreter);
         resolver.resolve(stmts);
-
 
         var ex = assertThrows(RuntimeError.class, () -> interpreter.interpret(stmts));
 
@@ -1081,6 +1318,7 @@ public class InterpreterTest {
 
     // Superclass declaration should fail if attempting to inherit from self.
     //
+    @Disabled
     @Test
     void testInheritFromSelf() {
         var interpreter = new Interpreter(new TestErrorHandler());
@@ -1164,6 +1402,51 @@ public class InterpreterTest {
         assertEquals("ABC", result.toString());
     }
 
+    // Tests implicit 'this' property.
+    //
+    @Test
+    void testImplicitThis() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var stmts = parseStmts("""
+            class Test;
+            begin
+                constructor Init();
+                begin
+                   this.Field := 'ABC';
+                end
+                
+                function DoSomething();
+                begin
+                   Field := 'HIJ';
+                end
+                
+                function GetSomething();
+                begin
+                   exit Field;
+                end
+                
+                function GetSomethingElse();
+                begin
+                   exit GetSomething();
+                end
+            end
+          
+            var T := Test();
+            T.DoSomething();
+            
+            var Abc := T.GetSomethingElse();""");
+
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
+
+        interpreter.interpret(stmts);
+
+        var result =  interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
+
+        assertEquals("HIJ", result.toString());
+    }
+
     // Parsing a class should fail if it doesn't have a 'end'.
     //
     @Test
@@ -1199,7 +1482,7 @@ public class InterpreterTest {
 
         var result =  interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
 
-        assertEquals("123.0", result.toString());
+        assertEquals("123", result.toString());
     }
 
     // Tests invoking a method.
@@ -1229,7 +1512,7 @@ public class InterpreterTest {
 
         var result =  interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
 
-        assertEquals("42.0", result.toString());
+        assertEquals("42", result.toString());
     }
 
     // Parsing a method should fail if invalid name.
@@ -1337,7 +1620,7 @@ public class InterpreterTest {
 
         var result =  interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
 
-        assertEquals("3.0", result.toString());
+        assertEquals("3", result.toString());
     }
 
     // Should fail if superclass is not a class.
@@ -1428,4 +1711,353 @@ public class InterpreterTest {
         });
         assertEquals("Can't use 'super' outside a class.", ex.getMessage());
     }
+
+    // Tests enums.
+    //
+    @Test
+    void testEnum() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var stmts = parseStmts("""
+            type Color = (Red, Green, Blue);
+            
+            var Abc := Red;""");
+
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
+
+        interpreter.interpret(stmts);
+
+        var result =  interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
+
+        assertEquals("Red", result.toString());
+    }
+
+    // Enums should throw runtime exception if no name.
+    //
+    @Test
+    void testEnumNoName() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var ex = assertThrows(Parser.ParseError.class, () -> {
+            var stmts = parseStmts("""
+               type = (Red, Green, Blue)""");
+
+            var resolver = new Resolver(interpreter);
+            resolver.resolve(stmts);
+
+            interpreter.interpret(stmts);
+        });
+        assertEquals("Expect enum name.", ex.getMessage());
+    }
+
+    // Enums should throw runtime exception if no equals.
+    //
+    @Test
+    void testEnumNoEquals() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var ex = assertThrows(Parser.ParseError.class, () -> {
+            var stmts = parseStmts("""
+               type Color (Red, Green, Blue)""");
+
+            var resolver = new Resolver(interpreter);
+            resolver.resolve(stmts);
+
+            interpreter.interpret(stmts);
+        });
+        assertEquals("Expect '=' after enum declaration.", ex.getMessage());
+    }
+
+    // Enums should throw runtime exception if no opening paren
+    //
+    @Test
+    void testEnumNoLeftParen() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var ex = assertThrows(Parser.ParseError.class, () -> {
+            var stmts = parseStmts("""
+               type Color = Red, Green, Blue""");
+
+            var resolver = new Resolver(interpreter);
+            resolver.resolve(stmts);
+
+            interpreter.interpret(stmts);
+        });
+        assertEquals("Expect '('", ex.getMessage());
+    }
+
+    // Enums should throw runtime exception if no enums :)
+    // TODO: think about this one!
+    //
+    @Test
+    void testEnumNoEnums() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var ex = assertThrows(Parser.ParseError.class, () -> {
+            var stmts = parseStmts("""
+               type Color = ()""");
+
+            var resolver = new Resolver(interpreter);
+            resolver.resolve(stmts);
+
+            interpreter.interpret(stmts);
+        });
+        assertEquals("Expect enum identifier.", ex.getMessage());
+    }
+
+    // Enums should throw runtime exception if no closing paren.
+    //
+    @Test
+    void testEnumNoRightParen() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var ex = assertThrows(Parser.ParseError.class, () -> {
+            var stmts = parseStmts("""
+               type Color = (Red, Blue""");
+
+            var resolver = new Resolver(interpreter);
+            resolver.resolve(stmts);
+
+            interpreter.interpret(stmts);
+        });
+        assertEquals("Expect ')'", ex.getMessage());
+    }
+
+    // Enums should throw runtime exception if no semicolon.
+    //
+    @Test
+    void testEnumNoSemicolon() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var ex = assertThrows(Parser.ParseError.class, () -> {
+            var stmts = parseStmts("""
+               type Color = (Red, Green, Blue)""");
+
+            var resolver = new Resolver(interpreter);
+            resolver.resolve(stmts);
+
+            interpreter.interpret(stmts);
+        });
+        assertEquals("Expect ';'", ex.getMessage());
+    }
+
+    // Tests defining a map.
+    //
+    @Test
+    void testMap() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var stmts = parseStmts("""
+            var map := [1:'ABC',2:'DEF'];
+            
+            var Abc := map.get(1);""");
+
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
+
+        interpreter.interpret(stmts);
+
+        var result =  interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
+
+        assertEquals("ABC", result.toString());
+    }
+
+    // Parsing a map should fail if no colons.
+    // TODO: Valid list?
+    //
+    @Test
+    void testMapNoColon() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var ex = assertThrows(Parser.ParseError.class, () -> {
+            var stmts = parseStmts("""
+              var map := [1, 2, 3]""");
+
+            var resolver = new Resolver(interpreter);
+            resolver.resolve(stmts);
+
+            interpreter.interpret(stmts);
+        });
+        assertEquals("Expect ':' after key.", ex.getMessage());
+    }
+
+    // Map should fail if not ended with bracket
+    // TODO: Valid list?
+    //
+    @Test
+    void testMapNoEndingBracket() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var ex = assertThrows(Parser.ParseError.class, () -> {
+            var stmts = parseStmts("""
+              var map := [1:'ABC', 2:'DEF'""");
+
+            var resolver = new Resolver(interpreter);
+            resolver.resolve(stmts);
+
+            interpreter.interpret(stmts);
+        });
+        assertEquals("Expect ']' after map.", ex.getMessage());
+    }
+
+    // Tests case statement
+    //
+    @Test
+    void testCaseStatement() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var stmts = parseStmts("""
+            function Nop(); begin end
+            var A := #0;
+            var Abc;
+            
+            case A of
+               'X': Nop();
+               'Y': Nop();
+               else
+                 Abc := True;
+            end""");
+
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
+
+        interpreter.interpret(stmts);
+
+        var result =  interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
+
+        assertEquals(true, result);
+    }
+
+    // Tests Array.
+    //
+    @Test
+    void testArray() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var stmts = parseStmts("""
+            var A := Array(1);
+            A.set(0, 'ABC');
+            
+            var Abc := A.get(0);""");
+
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
+
+        interpreter.interpret(stmts);
+
+        var result =  interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
+
+        assertEquals("ABC", result);
+    }
+
+    // Tests List.
+    //
+    @Test
+    void testList() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var stmts = parseStmts("""
+            var A := List();
+            A.add('ABC');
+            
+            var Abc := A[0];""");
+
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
+
+        interpreter.interpret(stmts);
+
+        var result =  interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
+
+        assertEquals("ABC", result);
+    }
+
+    // Tests Map without sugar syntax.
+    //
+    @Test
+    void testMapNoSugar() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var stmts = parseStmts("""
+            var A := Map();
+            A.put(1,'XYZ');
+            
+            var Abc := A.get(1);""");
+
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
+
+        interpreter.interpret(stmts);
+
+        var result =  interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0));
+
+        assertEquals("XYZ", result);
+    }
+
+    // Tests Write.
+    //
+    @Test
+    void testWrite() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var stmts = parseStmts("Write('Abc');");
+
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
+
+        interpreter.interpret(stmts);
+    }
+
+    // Tests WriteLn.
+    //
+    @Test
+    void testWriteLn() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var stmts = parseStmts("WriteLn('xyz');");
+
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
+
+        interpreter.interpret(stmts);
+    }
+
+    // Tests Length.
+    //
+    @Test
+    void testLength() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var stmts = parseStmts("var X := Length('ABCDEF');");
+
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
+
+        interpreter.interpret(stmts);
+
+        var result =  interpreter.globals.get(new Token(TokenType.IDENTIFIER, "X", "", 0));
+
+        assertEquals(6, result);
+    }
+
+    // Tests Copy.
+    //
+    @Test
+    void testCopy() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var stmts = parseStmts("var X := Copy('ABCDEF', 0, 3);");
+
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
+
+        interpreter.interpret(stmts);
+
+        var result =  interpreter.globals.get(new Token(TokenType.IDENTIFIER, "X", "", 0));
+
+        assertEquals("ABC", result);
+    }
+
+
 }

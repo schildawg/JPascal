@@ -15,22 +15,25 @@ public class ScannerTest {
     // with an EOF.
     @Test
     void scanTokensTest() {
-        var scanner = new Scanner("(),.-+;*");
+        var scanner = new Scanner("()[],.-+;*");
 
         var tokens = scanner.scanTokens();
 
         assertEquals(TokenType.LEFT_PAREN, tokens.get(0).type);
         assertEquals(TokenType.RIGHT_PAREN, tokens.get(1).type);
 
-        assertEquals(TokenType.COMMA, tokens.get(2).type);
-        assertEquals(TokenType.DOT, tokens.get(3).type);
-        assertEquals(TokenType.MINUS, tokens.get(4).type);
-        assertEquals(TokenType.PLUS, tokens.get(5).type);
+        assertEquals(TokenType.LEFT_BRACKET, tokens.get(2).type);
+        assertEquals(TokenType.RIGHT_BRACKET, tokens.get(3).type);
 
-        assertEquals(TokenType.SEMICOLON, tokens.get(6).type);
-        assertEquals(TokenType.STAR, tokens.get(7).type);
+        assertEquals(TokenType.COMMA, tokens.get(4).type);
+        assertEquals(TokenType.DOT, tokens.get(5).type);
+        assertEquals(TokenType.MINUS, tokens.get(6).type);
+        assertEquals(TokenType.PLUS, tokens.get(7).type);
 
-        assertEquals(TokenType.EOF, tokens.get(8).type);
+        assertEquals(TokenType.SEMICOLON, tokens.get(8).type);
+        assertEquals(TokenType.STAR, tokens.get(9).type);
+
+        assertEquals(TokenType.EOF, tokens.get(10).type);
     }
 
     // Scans the two character operators, verifying the correct token types are returned.  Also checks that
@@ -107,17 +110,31 @@ public class ScannerTest {
         assertEquals("[line 1] Error: Unterminated string.", Pascal.lastError);
     }
 
-    // Tests that scanning a series of numbers returns a Number object, with the String value in lexeme.
+    // Tests an integer number.
     //
     @Test
-    void scanNumberTest() {
+    void scanIntegerTest() {
         var scanner = new Scanner("123");
 
         var tokens = scanner.scanTokens();
         var token = tokens.get(0);
 
-        assertEquals(TokenType.NUMBER, token.type);
+        assertEquals(TokenType.INTEGER, token.type);
         assertEquals("123", token.lexeme);
+        assertEquals(123, token.literal);
+    }
+
+    // Tests a floating number.
+    //
+    @Test
+    void scanFloatTest() {
+        var scanner = new Scanner("123.0");
+
+        var tokens = scanner.scanTokens();
+        var token = tokens.get(0);
+
+        assertEquals(TokenType.NUMBER, token.type);
+        assertEquals("123.0", token.lexeme);
         assertEquals(123.0, token.literal);
     }
 
@@ -133,6 +150,17 @@ public class ScannerTest {
         assertEquals(TokenType.CHAR, token.type);
         assertEquals("#0", token.lexeme);
         assertEquals(0, token.literal);
+    }
+
+    // Should report an error if a character contains a non-digut.
+    ///
+    @Test
+    void scanCharInvalidTest() {
+        var scanner = new Scanner("#F");
+        scanner.scanTokens();
+
+        assertTrue(Pascal.hadError);
+        assertEquals("[line 1] Error: Invalid character: F", Pascal.lastError);
     }
 
     // If a period is encountered while scanning numbers, it should scan for additional numbers for a decimal

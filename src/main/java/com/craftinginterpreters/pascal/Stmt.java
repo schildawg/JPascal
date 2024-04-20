@@ -6,6 +6,7 @@ abstract class Stmt {
     interface Visitor<R> {
         R visitBlockStmt(Block stmt);
         R visitClassStmt(Class stmt);
+        R visitEnumStmt(Enum stmt);
         R visitExpressionStmt(Expression stmt);
         R visitFunctionStmt(Function stmt);
         R visitIfStmt(If stmt);
@@ -42,6 +43,21 @@ abstract class Stmt {
         final Token name;
         final Expr.Variable superclass;
         final List<Stmt.Function> methods;
+    }
+
+    static class Enum extends Stmt {
+        Enum(Token name, List<Token> values) {
+            this.name = name;
+            this.values = values;
+        }
+
+        @Override
+        <R> R accept(Visitor<R> visitor) {
+            return visitor.visitEnumStmt(this);
+        }
+
+        final Token name;
+        final List<Token> values;
     }
 
     static class Expression extends Stmt {
@@ -88,7 +104,7 @@ abstract class Stmt {
 
         final Expr condition;
         final Stmt thenBranch;
-        final Stmt elseBranch;
+        Stmt elseBranch;
     }
 
     static class Print extends Stmt {

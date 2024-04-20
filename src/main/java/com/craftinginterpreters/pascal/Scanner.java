@@ -22,7 +22,6 @@ public class Scanner {
         keywords.put("else",   ELSE);
         keywords.put("false",  FALSE);
         keywords.put("for",    FOR);
-        keywords.put("function", FUNCTION);
         keywords.put("if",     IF);
         keywords.put("nil",    NIL);
         keywords.put("not",    NOT);
@@ -33,6 +32,7 @@ public class Scanner {
         keywords.put("then",   THEN);
         keywords.put("this",   THIS);
         keywords.put("true",   TRUE);
+        keywords.put("type",   TYPE);
         keywords.put("var",    VAR);
         keywords.put("while",  WHILE);
 
@@ -40,6 +40,13 @@ public class Scanner {
         keywords.put("end",    END);
 
         keywords.put("do",     DO);
+
+        keywords.put("case",   CASE);
+        keywords.put("of",     OF);
+
+        keywords.put("constructor", CONSTRUCTOR);
+        keywords.put("function",    FUNCTION);
+        keywords.put("procedure",   PROCEDURE);
 
         keywords.put("unit",  UNIT);
         keywords.put("uses",  USES);
@@ -146,15 +153,22 @@ public class Scanner {
 
     private void number() {
         while (isDigit(peek())) advance();
+        boolean isInteger = true;
 
         // look for a fractional part.
         if (peek() == '.' && isDigit(peekNext())) {
+            isInteger = false;
             advance();
         }
 
         while (isDigit(peek())) advance();
 
-        addToken(NUMBER, Double.parseDouble(source.substring(start, current)));
+        if (isInteger) {
+            addToken(INTEGER, Integer.parseInt(source.substring(start, current)));
+        }
+        else {
+            addToken(NUMBER, Double.parseDouble(source.substring(start, current)));
+        }
     }
 
     private void string() {
@@ -172,12 +186,18 @@ public class Scanner {
 
         // Trim the surrounding quotes
         String value = source.substring(start + 1, current -1);
-        addToken(STRING, value);
+
+        if (value.length() == 1) {
+            addToken(CHAR, value.charAt(0));
+        }
+        else {
+            addToken(STRING, value);
+        }
     }
 
     private void char_() {
         if (!isDigit(peek()) || isAtEnd()) {
-            Pascal.error(line, "Invalid character.");
+            Pascal.error(line, "Invalid character: " + peek());
             return;
         }
 
@@ -215,7 +235,7 @@ public class Scanner {
     }
 
     private boolean isDigit(char c) {
-        return c >= '0' && c < '9';
+        return c >= '0' && c <= '9';
     }
 
     private boolean isAtEnd() {

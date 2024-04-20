@@ -51,11 +51,11 @@ public class PascalClass implements PascalCallable {
      * @return number of parameter for initializer.
      */
     @Override
-    public int aritity() {
+    public int arity() {
         var initializer = findMethod("Init");
         if (initializer == null) return 0;
 
-        return initializer.aritity();
+        return initializer.arity();
     }
 
     /**

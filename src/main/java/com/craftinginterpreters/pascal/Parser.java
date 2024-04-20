@@ -2,11 +2,14 @@ package com.craftinginterpreters.pascal;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 import static com.craftinginterpreters.pascal.TokenType.*;
 
-
+/**
+ * Parser.
+ */
 public class Parser {
     private static final boolean DEBUG = false;
     private final boolean synchronize;
@@ -47,6 +50,8 @@ public class Parser {
             if (match(CLASS)) return classDeclaration();
             if (match(FUNCTION)) return function("function");
             if (match(VAR)) return varDeclaration();
+            if (match(TYPE)) return typeDeclaration();
+
             return statement();
         }
         catch (ParseError error) {
@@ -71,6 +76,8 @@ public class Parser {
 
         List<Stmt.Function> methods = new ArrayList<>();
         while (!check(END) && !isAtEnd()) {
+            match(FUNCTION, PROCEDURE, CONSTRUCTOR);
+
             methods.add(function("method"));
         }
         consume(END, "Expect 'end' after class body.");
@@ -78,9 +85,27 @@ public class Parser {
         return new Stmt.Class(name, superclass, methods);
     }
 
+    private Stmt typeDeclaration() {
+        var name = consume(IDENTIFIER, "Expect enum name.");
+
+        consume(EQUAL, "Expect '=' after enum declaration.");
+        consume(LEFT_PAREN, "Expect '('");
+
+        List<Token> parameters = new ArrayList<>();
+        do {
+            parameters.add(consume(IDENTIFIER, "Expect enum identifier."));
+        }
+        while (match(COMMA));
+        consume(RIGHT_PAREN, "Expect ')'");
+        consume(SEMICOLON, "Expect ';'");
+
+        return new Stmt.Enum(name, parameters);
+    }
+
     private Stmt statement() {
         if (match(FOR)) return forStatement();
         if (match(IF)) return ifStatement();
+        if (match(CASE)) return caseStatement();
         if (match(PRINT)) return printStatement();
         if (match(EXIT)) return exitStatement();
         if (match(WHILE)) return whileStatement();
@@ -128,16 +153,54 @@ public class Parser {
     }
 
     private Stmt ifStatement() {
-        Expr condition = expression();
+        var condition = expression();
         consume(THEN, "Expect 'then' after if condition.");
 
-        Stmt thenBranch = statement();
+        var thenBranch = statement();
         Stmt elseBranch = null;
         if (match(ELSE)) {
             elseBranch = statement();
         }
 
         return new Stmt.If(condition, thenBranch, elseBranch);
+    }
+
+    private Stmt caseStatement() {
+        var left = expression();
+        consume(OF, "Expect 'of' after case condition.");
+        Stmt.If top = null;
+        Stmt.If current = null;
+
+        do {
+            var right = expression();
+            var condition = (Expr) new Expr.Binary(left, new Token(EQUAL, null, null, previous().line), right);
+
+            while (match(COMMA)) {
+                right = expression();
+                var additional = new Expr.Binary(left, new Token(EQUAL, null, null, previous().line), right);
+                condition = new Expr.Logical(condition, new Token(OR, null, null, previous().line), additional);
+            }
+
+            consume(COLON, "Expect ':' after condition.");
+
+             var stmt = statement();
+
+            var ifStmt = new Stmt.If(condition, stmt, null);
+            if (top == null) {
+                top = ifStmt;
+            }
+            else {
+                current.elseBranch = ifStmt;
+            }
+            current = ifStmt;
+        }
+        while (!match(ELSE, END));
+
+        if (previous().type == ELSE) {
+            current.elseBranch = statement();
+            consume(END, "Expected 'end'.");
+        }
+        return top;
     }
 
     private Stmt printStatement() {
@@ -160,7 +223,7 @@ public class Parser {
     }
 
     private Stmt varDeclaration() {
-        Token name = consume(IDENTIFIER, "Expect variable name.");
+        var name = consume(IDENTIFIER, "Expect variable name.");
 
         Expr initializer = null;
         if (match(ASSIGN)) {
@@ -173,7 +236,7 @@ public class Parser {
     }
 
     private Stmt whileStatement() {
-        Expr condition = expression();
+        var condition = expression();
         consume(DO, "Expect 'do' after condition.");
 
         Stmt body = statement();
@@ -182,7 +245,7 @@ public class Parser {
     }
 
     private Stmt expressionStatement() {
-        Expr value = expression();
+        var value = expression();
 
         consume(SEMICOLON, "Expect ';' after value.");
 
@@ -206,8 +269,15 @@ public class Parser {
            consume(RIGHT_PAREN, "Expect ') after parameters.");
        }
        consume(SEMICOLON, "Expect ';'");
+       var body = new ArrayList<Stmt>();
+       if (match(TYPE)) {
+           while (!check(BEGIN)) {
+               body.add(typeDeclaration());
+           }
+       }
        consume(BEGIN, "Expect 'begin' before " + kind + " body.");
-       List<Stmt> body = block();
+       body.addAll(block());
+
        return new Stmt.Function(name, parameters, body);
     }
 
@@ -223,14 +293,14 @@ public class Parser {
     }
 
     private Expr assignment() {
-        Expr expr = or();
+        var expr = or();
 
         if (match(ASSIGN)) {
-            Token equals = previous();
-            Expr value = assignment();
+            var equals = previous();
+            var value = assignment();
 
             if (expr instanceof Expr.Variable) {
-                Token name = ((Expr.Variable)expr).name;
+                var name = ((Expr.Variable)expr).name;
                 return new Expr.Assign(name, value);
             }
             else if (expr instanceof Expr.Get get) {
@@ -243,7 +313,7 @@ public class Parser {
     }
 
     private Expr or() {
-        Expr expr = and();
+        var expr = and();
 
         while (match(OR)) {
             Token operator = previous();
@@ -254,7 +324,7 @@ public class Parser {
     }
 
     private Expr and() {
-        Expr expr = equality();
+        var expr = equality();
 
         while (match(AND)) {
             Token operator = previous();
@@ -279,7 +349,7 @@ public class Parser {
     private Expr comparison() {
         debug("comparison");
 
-        Expr expr = term();
+        var expr = term();
 
         while (match(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL)) {
             Token operator = previous();
@@ -293,7 +363,7 @@ public class Parser {
     private Expr term() {
         debug("term");
 
-        Expr expr = factor();
+        var expr = factor();
 
         while (match(MINUS, PLUS)) {
             Token operator = previous();
@@ -306,7 +376,7 @@ public class Parser {
     private Expr factor() {
         debug("factor");
 
-        Expr expr = unary();
+        var expr = unary();
 
         while (match(SLASH, STAR)) {
             Token operator = previous();
@@ -347,11 +417,17 @@ public class Parser {
     }
 
     private Expr call() {
-        Expr expr = primary();
+        var expr = primary();
 
         while (true) {
             if (match(LEFT_PAREN)) {
                 expr = finishCall(expr);
+            }
+            else if (match(LEFT_BRACKET)) {
+                var subscript = expression();
+                consume(RIGHT_BRACKET, "Expect ']' after subscript.");
+
+                expr = new Expr.Subscript(previous(), expr, subscript);
             }
             else if (match(DOT)) {
                 Token name = consume(IDENTIFIER, "Expect property name after '.'");
@@ -371,7 +447,7 @@ public class Parser {
         if (match(TRUE)) return new Expr.Literal(true);
         if (match(NIL)) return new Expr.Literal(null);
 
-        if (match(NUMBER, STRING)) {
+        if (match(NUMBER, INTEGER, STRING, CHAR)) {
             return new Expr.Literal(previous().literal);
         }
 
@@ -388,6 +464,21 @@ public class Parser {
         if (match(IDENTIFIER)) {
             return new Expr.Variable(previous());
         }
+
+        if (match(LEFT_BRACKET)) {
+            var map = new HashMap<Expr, Expr>();
+            do {
+                var key = expression();
+                consume(TokenType.COLON, "Expect ':' after key.");
+                var value = expression();
+                map.put(key, value);
+            }
+            while (match(COMMA));
+            consume(RIGHT_BRACKET, "Expect ']' after map.");
+
+            return new Expr.Map(map);
+        }
+
         if (match(LEFT_PAREN)) {
             Expr expr = expression();
             consume(RIGHT_PAREN, "Expect ')' after expression.");

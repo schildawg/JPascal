@@ -14,7 +14,7 @@ class Environment {
         this.enclosing = enclosing;
     }
 
-    private final Map<String, Object> values = new HashMap<>();
+    final Map<String, Object> values = new HashMap<>();
 
     Object get(Token name) {
         if (values.containsKey(name.lexeme)) {
@@ -30,7 +30,7 @@ class Environment {
     }
 
     Environment ancestor(int distance) {
-        Environment environment = this;
+        var environment = this;
         for (int i = 0; i < distance; i++) {
             environment = environment.enclosing;
         }
@@ -41,6 +41,7 @@ class Environment {
     Object getAt(int distance, String name) {
         return ancestor(distance).values.get(name);
     }
+
     void assign(Token name, Object value) {
         if (values.containsKey(name.lexeme)) {
             values.put(name.lexeme, value);
