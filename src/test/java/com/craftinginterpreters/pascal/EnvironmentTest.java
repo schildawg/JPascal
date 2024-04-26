@@ -17,7 +17,7 @@ public class EnvironmentTest {
 
         env.define("test", 1);
 
-        var result = env.get(new Token(TokenType.IDENTIFIER, "test", null, 0));
+        var result = env.get(new Token(TokenType.IDENTIFIER, "test", null, 0, 0, "test"));
 
         assertEquals(1, result);
     }
@@ -32,7 +32,7 @@ public class EnvironmentTest {
         globals.define("test", 1);
         env.define("test", 2);
 
-        var token = new Token(TokenType.IDENTIFIER, "test", null, 0);
+        var token = new Token(TokenType.IDENTIFIER, "test", null, 0, 0, "test");
 
         assertEquals(1, globals.get(token));
         assertEquals(2, env.get(token));
@@ -48,7 +48,7 @@ public class EnvironmentTest {
 
         globals.define("test", 1);
 
-        var token = new Token(TokenType.IDENTIFIER, "test", null, 0);
+        var token = new Token(TokenType.IDENTIFIER, "test", null, 0, 0, "test");
 
         assertEquals(1, functionEnv.get(token));
     }
@@ -73,7 +73,7 @@ public class EnvironmentTest {
 
         globals.define("test", 1);
 
-        var token = new Token(TokenType.IDENTIFIER, "test", null, 0);
+        var token = new Token(TokenType.IDENTIFIER, "test", null, 0, 0, "test");
 
         env.assign(token, 2);
         assertEquals(2, env.get(token));
@@ -86,7 +86,7 @@ public class EnvironmentTest {
         var globals = new Environment();
         var env = new Environment(globals);
 
-        var token = new Token(TokenType.IDENTIFIER, "test", null, 0);
+        var token = new Token(TokenType.IDENTIFIER, "test", null, 0, 0, "test");
 
         var ex = assertThrows(RuntimeError.class, () -> {
             env.assign(token, 2);
@@ -99,7 +99,7 @@ public class EnvironmentTest {
     @Test
     void testGetNotDefined() {
         var globals = new Environment();
-        var token = new Token(TokenType.IDENTIFIER, "test", null, 0);
+        var token = new Token(TokenType.IDENTIFIER, "test", null, 0, 0, "test");
 
         var ex = assertThrows(RuntimeError.class, () -> {
             globals.get(token);
@@ -117,7 +117,7 @@ public class EnvironmentTest {
 
         globals.define("test", 1);
 
-        var token = new Token(TokenType.IDENTIFIER, "test", null, 0);
+        var token = new Token(TokenType.IDENTIFIER, "test", null, 0, 0, "test");
 
         functionEnv.assign(token, 2);
 

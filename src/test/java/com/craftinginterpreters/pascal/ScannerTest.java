@@ -149,7 +149,7 @@ public class ScannerTest {
 
         assertEquals(TokenType.CHAR, token.type);
         assertEquals("#0", token.lexeme);
-        assertEquals(0, token.literal);
+        assertEquals((char) 0, token.literal);
     }
 
     // Should report an error if a character contains a non-digut.

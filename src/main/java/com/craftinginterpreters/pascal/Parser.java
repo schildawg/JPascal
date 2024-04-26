@@ -1,9 +1,9 @@
 package com.craftinginterpreters.pascal;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
 
 import static com.craftinginterpreters.pascal.TokenType.*;
 
@@ -14,9 +14,15 @@ public class Parser {
     private static final boolean DEBUG = false;
     private final boolean synchronize;
 
+    private static final Set<String> uses = new HashSet<>();
+    private final List<ParseError> errors = new ArrayList<>();
+
     static class ParseError extends RuntimeException {
-        ParseError(String message) {
+        public Token token;
+
+        ParseError(Token token, String message) {
             super(message);
+            this.token = token;
         }
     }
 
@@ -33,12 +39,35 @@ public class Parser {
     }
 
     List<Stmt> parse() {
-        List<Stmt> statements = new ArrayList<>();
-        while (!isAtEnd()) {
-            statements.add(declaration());
-        }
+        //try {
+            List<Stmt> statements = new ArrayList<>();
+            while (!isAtEnd()) {
+                if (match(USES)) {
+                    statements.addAll(usesStatement());
+                }
+                else if (check(IDENTIFIER, "test") && checkNext(STRING)) {
+                    // context-based keyword "test"
+                    advance();
 
-        return statements;
+                    var name = consume(STRING, "Expect test case name.");
+                    consume(SEMICOLON, "Expect ';'");
+                    consume(BEGIN, "Expect 'begin' before test body.");
+
+                    List<Stmt> body = new ArrayList<>();
+                    body.addAll(block());
+
+                    statements.add(new Stmt.Function(name, new ArrayList<>(), body));
+                }
+                else {
+                    statements.add(declaration());
+                }
+            }
+            return statements;
+//        }
+//        catch (ParseError e) {
+//            //errors.add(e);
+//            return new ArrayList<>();
+//        }
     }
 
     protected Expr expression() {
@@ -60,6 +89,45 @@ public class Parser {
             synchronize();
         }
         return null;
+    }
+
+    private List<Stmt> usesStatement() {
+        try {
+            var name = consume(IDENTIFIER, "Expected identifier.");
+            var fileName = name.lexeme.toString();
+            consume(SEMICOLON, "Expected ';'");
+
+            if  (!uses.contains(fileName)) {
+                uses.add(fileName);
+                var source = Files.readAllBytes(Paths.get(fileName + ".pas"));
+
+                var scanner = new Scanner(fileName + ".pas", new String(source, Charset.defaultCharset()));
+                var tokens = scanner.scanTokens();
+
+                var parser = new Parser(tokens);
+
+                List<Stmt> result = new ArrayList<>();
+                try {
+                    result = parser.parse();
+                }
+                catch (ParseError e) {}
+
+                if (parser.errors.isEmpty()) {
+                    Console.success(fileName + ".pas");
+                }
+                else {
+                    Console.fail(fileName + ".pas");
+                    for (var error : parser.errors) {
+                       Console.error(new RuntimeError(error.token, error.getMessage()));
+                    }
+                }
+                return result;
+            }
+            return new ArrayList<>();
+        }
+        catch (Exception e) {
+            throw new RuntimeError(previous(), e.getMessage());
+        }
     }
 
     private Stmt classDeclaration() {
@@ -173,12 +241,12 @@ public class Parser {
 
         do {
             var right = expression();
-            var condition = (Expr) new Expr.Binary(left, new Token(EQUAL, null, null, previous().line), right);
+            var condition = (Expr) new Expr.Binary(left, new Token(EQUAL, null, null, previous().line, previous().offset, previous().fileName), right);
 
             while (match(COMMA)) {
                 right = expression();
-                var additional = new Expr.Binary(left, new Token(EQUAL, null, null, previous().line), right);
-                condition = new Expr.Logical(condition, new Token(OR, null, null, previous().line), additional);
+                var additional = new Expr.Binary(left, new Token(EQUAL, null, null, previous().line, previous().offset, previous().fileName), right);
+                condition = new Expr.Logical(condition, new Token(OR, null, null, previous().line, previous().offset, previous().fileName), additional);
             }
 
             consume(COLON, "Expect ':' after condition.");
@@ -500,12 +568,15 @@ public class Parser {
     private Token consume(TokenType type, String message) {
         if (check(type)) return advance();
 
-        throw error(peek(), message);
+        throw error(previous(), message);
     }
 
     private ParseError error(Token token, String message) {
         Pascal.error(token, message);
-        return new ParseError(message);
+        var error = new ParseError(token, message);
+        errors.add(error);
+
+        return error;
     }
 
     private void synchronize() {
@@ -531,6 +602,19 @@ public class Parser {
     private boolean check(TokenType type) {
         if (isAtEnd()) return false;
         return peek().type == type;
+    }
+
+    private boolean check(TokenType type, String lexeme) {
+        if (isAtEnd()) return false;
+        return peek().type == type && lexeme.equalsIgnoreCase(peek().lexeme);
+    }
+
+    private boolean checkNext(TokenType type) {
+        if (isAtEnd()) return false;
+        var nextToken = tokens.get(current + 1);
+        if (nextToken.type == EOF) return false;
+
+        return nextToken.type == type;
     }
 
     private Token advance() {

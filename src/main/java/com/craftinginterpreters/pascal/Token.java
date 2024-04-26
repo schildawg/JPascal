@@ -8,6 +8,8 @@ public class Token {
     final String lexeme;
     final Object literal;
     final int line;
+    final int offset;
+    final String fileName;
 
     /**
      * Constructor.
@@ -16,12 +18,16 @@ public class Token {
      * @param lexeme the lexeme.
      * @param literal the literal value.
      * @param line the line number of token.
+     * @param offset offset of the token on the line.
+     * @param fileName source file.
      */
-    Token(TokenType type, String lexeme, Object literal, int line) {
+    Token(TokenType type, String lexeme, Object literal, int line, int offset, String fileName) {
         this.type = type;
         this.lexeme = lexeme;
         this.literal = literal;
         this.line = line;
+        this.offset = offset;
+        this.fileName = fileName;
     }
 
     @Override

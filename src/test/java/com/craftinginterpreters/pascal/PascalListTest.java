@@ -16,14 +16,14 @@ public class PascalListTest {
     void testList() {
         var uut = new PascalList();
 
-        var add = (PascalCallable) uut.get(new Token(TokenType.IDENTIFIER, "add", null, 0));
+        var add = (PascalCallable) uut.get(new Token(TokenType.IDENTIFIER, "add", null, 0, 0, "test"));
         assertEquals(1, add.arity());
 
         var args = new ArrayList<>();
         args.add("ABC");
         add.call(null, args);
 
-        var get = (PascalCallable) uut.get(new Token(TokenType.IDENTIFIER, "get", null, 0));
+        var get = (PascalCallable) uut.get(new Token(TokenType.IDENTIFIER, "get", null, 0, 0, "test"));
         assertEquals(1, get.arity());
 
         args = new ArrayList<>();
@@ -31,7 +31,7 @@ public class PascalListTest {
         var value = get.call(null, args);
         assertEquals("ABC", value);
 
-        var length = (int) uut.get(new Token(TokenType.IDENTIFIER, "length", null, 0));
+        var length = (int) uut.get(new Token(TokenType.IDENTIFIER, "length", null, 0, 0, "test"));
         assertEquals(1, length);
 
         assertEquals("[ABC]", uut.toString());
@@ -44,7 +44,7 @@ public class PascalListTest {
         var ex = assertThrows(RuntimeError.class, () -> {
             var uut = new PascalList();
 
-            uut.get(new Token(TokenType.IDENTIFIER, "invalid", null, 0));
+            uut.get(new Token(TokenType.IDENTIFIER, "invalid", null, 0, 0, "test"));
         });
         assertEquals("Undefined property 'invalid'.", ex.getMessage());
     }
@@ -56,7 +56,7 @@ public class PascalListTest {
           var ex = assertThrows(RuntimeError.class, () -> {
             var uut = new PascalList();
 
-            uut.set(new Token(TokenType.IDENTIFIER, "invalid", null, 0), 1);
+            uut.set(new Token(TokenType.IDENTIFIER, "invalid", null, 0, 0, "test"), 1);
         });
         assertEquals("Can't add properties to lists.", ex.getMessage());
     }

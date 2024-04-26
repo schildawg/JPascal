@@ -6,7 +6,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.List;
+
 
 public class Pascal {
     public static boolean hadError = false;
@@ -28,6 +28,11 @@ public class Pascal {
     }
 
     private static void runFile(String path) throws IOException {
+        var fileName = Console.ANSI_CYAN + path + Console.ANSI_RESET;
+        Console.header(path);
+        Console.info("Building...");
+        Console.info("");
+        Console.success(path);
         var bytes = Files.readAllBytes(Paths.get(path));
         run(new String(bytes, Charset.defaultCharset()));
 
@@ -50,21 +55,29 @@ public class Pascal {
     }
 
     private static void run(String source) {
-        Scanner scanner = new Scanner(source);
-        List<Token> tokens = scanner.scanTokens();
+        var scanner = new Scanner("REPL", source);
+        var tokens = scanner.scanTokens();
 
-        Parser parser = new Parser(tokens);
-        List<Stmt> statements = parser.parse();
+        var parser = new Parser(tokens);
+        var statements = parser.parse();
 
-        if (hadError) return;
+        if (hadError) {
+            Console.info(Console.BAR);
+            Console.info(Console.ANSI_RED + "BUILD FAILED" + Console.ANSI_RESET);
+            Console.info(Console.BAR);
+            return;
+        }
 
-        Resolver resolver = new Resolver(interpreter);
+        Console.info(Console.BAR);
+        Console.info(Console.ANSI_GREEN + "BUILD SUCCESS" + Console.ANSI_RESET);
+        Console.info(Console.BAR);
+
+        var resolver = new Resolver(interpreter);
         resolver.resolve(statements);
 
         // Stop if there was a resolution error.
         if (hadError) return;
-
-        interpreter.interpret(statements);
+        interpreter.runTests(statements);
     }
 
     static void error(int line, String message) {
@@ -73,7 +86,8 @@ public class Pascal {
 
     private static void report(int line, String where, String message) {
         lastError = "[line " + line + "] Error" + where + ": " + message;
-        System.err.println(lastError);
+        //System.err.println(lastError);
+        //Console.error(line, where, message);
         hadError = true;
     }
 
@@ -86,8 +100,8 @@ public class Pascal {
     }
 
     static void runtimeError(RuntimeError error) {
-        System.err.println(error.getMessage() +
-                "\n[line " + error.token.line + "]");
+        //System.err.println(error.getMessage() +
+        //        "\n[line " + error.token.line + "]");
 
         hadRuntimeError = true;
     }

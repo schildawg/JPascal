@@ -6,6 +6,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     final Environment globals = new Environment();
     private Environment environment = globals;
     private final Map<Expr, Integer> locals = new HashMap<>();
+
     private final ErrorHandler errorHandler;
 
     Interpreter(ErrorHandler errorHandler) {
@@ -73,7 +74,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
             @Override
             public Object call(Interpreter interpreter, List<Object> arguments) {
-                var s = (String) arguments.get(0);
+                var s = String.valueOf(arguments.get(0));
                 return s.length();
             }
         });
@@ -109,6 +110,34 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             }
         });
 
+        globals.define("Debug", new PascalCallable() {
+            @Override
+            public int arity() {
+                return 2;
+            }
+
+            @Override
+            public Object call(Interpreter interpreter, List<Object> arguments) {
+                var fun = arguments.get(0);
+                var klass = arguments.get(1);
+                Console.debug(fun + ": " + klass.getClass().getName());
+                return null;
+            }
+        });
+
+        globals.define("Str", new PascalCallable() {
+            @Override
+            public int arity() {
+                return 1;
+            }
+
+            @Override
+            public Object call(Interpreter interpreter, List<Object> arguments) {
+                var arg = arguments.get(0);
+                return arg == null ? "nil" : arg.toString();
+            }
+        });
+
         globals.define("WriteLn", new PascalCallable() {
             @Override
             public int arity() {
@@ -141,6 +170,92 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         }
     }
 
+    void runTests(List<Stmt> statements) {
+         globals.define("AssertTrue", new Assertion() {
+            @Override
+            public int arity() {
+                return 1;
+            }
+
+            @Override
+            public Object call(Interpreter interpreter, List<Object> arguments) {
+                var call = (Expr.Call) arguments.get(0);
+
+                if (!isTruthy(arguments.get(1))) {
+                    throw new RuntimeError(call.paren, "Assertion 'left = right' failed.");
+                }
+                return true;
+            }
+        });
+
+        globals.define("AssertEqual", new Assertion() {
+            @Override
+            public int arity() {
+                return 2;
+            }
+
+            @Override
+            public Object call(Interpreter interpreter, List<Object> arguments) {
+                var call = (Expr.Call) arguments.get(0);
+
+                if (!isEqual(arguments.get(1), arguments.get(2))) {
+                    throw new RuntimeError(call.paren, "Assertion 'left = right' failed.  Expected '" + arguments.get(1) + "' but got '" + arguments.get(2) + "'.");
+                }
+                return true;
+            }
+        });
+
+        try {
+            Map<String, Set<Stmt.Function>> tests = new HashMap<>();
+            int count = 0;
+            for (Stmt statement : statements) {
+                count++;
+                if (statement instanceof Stmt.Function fun) {
+                    execute(statement);
+                    if (!tests.containsKey(fun.name.fileName)) {
+                        tests.put(fun.name.fileName, new HashSet<>());
+                    }
+                    var set = tests.get(fun.name.fileName);
+                    set.add(fun);
+                }
+                else if (statement instanceof Stmt.Class klass) {
+                    execute(klass);
+                }
+                else if (statement instanceof Stmt.Enum stmt) {
+                    execute(stmt);
+                }
+                else if (statement instanceof Stmt.Var stmt) {
+                    execute(stmt);
+                }
+            }
+
+            Console.info("Running " + count + " tests...");
+            for (var key : tests.keySet()) {
+                Console.subheader(key);
+
+                var set = tests.get(key);
+                for (var fun : set) {
+                    try {
+                        var test = (PascalCallable) lookupVariable(fun.name, null);
+                        test.call(this, new ArrayList<>());
+                        Console.info("Test: " + fun.name.literal + " " + ".".repeat(55 - fun.name.literal.toString().length()) + " [ " + Console.ANSI_GREEN + "PASS" + Console.ANSI_RESET + " ]");
+                    }
+                    catch (RuntimeError error) {
+                        Console.info("Test: " + fun.name.literal + " " + ".".repeat(55 - fun.name.literal.toString().length()) + " [ " + Console.ANSI_RED + "FAIL" + Console.ANSI_RESET + " ]");
+
+                        Console.error(error);
+                        errorHandler.runtimeError(error);
+                    }
+                }
+                Console.info("");
+            }
+        }
+        catch (RuntimeError error) {
+            Console.error(error);
+            errorHandler.runtimeError(error);
+        }
+    }
+
     @Override
     public Object visitAssignExpr(Expr.Assign expr) {
         var value = evaluate(expr.value);
@@ -151,8 +266,12 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                 environment.assignAt(distance, expr.name, value);
             }
             catch (Exception e) {
-                var object = (PascalInstance)  environment.get(new Token(TokenType.THIS, "this", null, expr.name.line));
-                object.set(new Token(TokenType.IDENTIFIER, expr.name.lexeme, null, expr.name.line), value);
+                try {
+                    var object = (PascalInstance) environment.get(new Token(TokenType.THIS, "this", null, expr.name.line, 0, null));
+                    object.set(new Token(TokenType.IDENTIFIER, expr.name.lexeme, null, expr.name.line, 0, null), value);
+                } catch (Exception e2) {
+                    throw e;
+                }
             }
         }
         else {
@@ -160,8 +279,12 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                 globals.assign(expr.name, value);
             }
             catch (Exception e) {
-                var object = (PascalInstance)  environment.get(new Token(TokenType.THIS, "this", null, expr.name.line));
-                object.set(new Token(TokenType.IDENTIFIER, expr.name.lexeme, null, expr.name.line), value);
+                try {
+                    var object = (PascalInstance) environment.get(new Token(TokenType.THIS, "this", null, expr.name.line, 0, null));
+                    object.set(new Token(TokenType.IDENTIFIER, expr.name.lexeme, null, expr.name.line, 0, null), value);
+                } catch (Exception e2) {
+                    throw e;
+                }
             }
         }
         return value;
@@ -179,6 +302,9 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                 if (left instanceof Double) {
                     return (double) left > (double) right;
                 }
+                else if (left instanceof Character) {
+                    return (char) left >= (char) right;
+                }
                 else {
                     return (int) left > (int) right;
                 }
@@ -187,6 +313,9 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                 checkNumberOperands(expr.operator, left, right);
                 if (left instanceof Double) {
                     return (double) left >= (double) right;
+                }
+                else if (left instanceof Character) {
+                    return (char) left >= (char) right;
                 }
                 else {
                     return (int) left >= (int) right;
@@ -197,6 +326,9 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                 if (left instanceof Double) {
                     return (double) left < (double) right;
                 }
+                else if (left instanceof Character) {
+                    return (char) left < (char) right;
+                }
                 else {
                     return (int) left < (int) right;
                 }
@@ -205,6 +337,9 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                 checkNumberOperands(expr.operator, left, right);
                 if (left instanceof Double) {
                     return (double) left <= (double) right;
+                }
+                else if (left instanceof Character) {
+                    return (char) left <= (char) right;
                 }
                 else {
                     return (int) left <= (int) right;
@@ -227,7 +362,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                     return (int) left + (int) right;
                 }
                 if (left instanceof String || right instanceof String) {
-                    return String.valueOf(left) + right;
+                    return stringify(left) + stringify(right);
                 }
                 throw new RuntimeError(expr.operator, "Operands must be two numbers, or two strings.");
             case SLASH:
@@ -263,8 +398,13 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         }
         catch (Exception e) {
             if (expr instanceof Expr.Variable variable) {
-                var object = environment.get(new Token(TokenType.THIS, "this", null, variable.name.line));
-                return ((PascalInstance) object).get(new Token(TokenType.IDENTIFIER, variable.name.lexeme, null, variable.name.line));
+                try {
+                    var object = environment.get(new Token(TokenType.THIS, "this", null, variable.name.line, 0, null));
+                    return ((PascalInstance) object).get(new Token(TokenType.IDENTIFIER, variable.name.lexeme, null, variable.name.line, 0, null));
+
+                } catch (Exception e2) {
+                    throw e;
+                }
             }
             throw e;
         }
@@ -288,7 +428,15 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             throw new RuntimeError(expr.paren, "Expected " + function.arity() + " arguments but got " + arguments.size() + ".");
         }
 
-        return function.call(this, arguments);
+        if (function instanceof Assertion) {
+            var newArgs = new ArrayList<>();
+            newArgs.add(expr);
+            newArgs.addAll(arguments);
+            return function.call(this, newArgs);
+        }
+        else {
+            return function.call(this, arguments);
+        }
     }
 
     @Override
@@ -368,8 +516,13 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             return lookupVariable(expr.name, expr);
         }
         catch (Exception e) {
-            var object = environment.get(new Token(TokenType.THIS, "this", null, expr.name.line));
-            return ((PascalInstance) object).get(new Token(TokenType.IDENTIFIER, expr.name.lexeme, null, expr.name.line));
+            try {
+                var object = environment.get(new Token(TokenType.THIS, "this", null, expr.name.line, 0, null));
+                return ((PascalInstance) object).get(new Token(TokenType.IDENTIFIER, expr.name.lexeme, null, expr.name.line, 0, null));
+            }
+            catch (Exception e2) {
+                throw e;
+            }
         }
     }
 
@@ -407,7 +560,8 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         var distance = locals.get(expr);
         if (distance != null) {
             return environment.getAt(distance, name.lexeme);
-        } else {
+        }
+        else {
             return globals.get(name);
         }
     }
@@ -440,6 +594,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         if (left instanceof Integer && right instanceof Integer) return;
         if (left instanceof Character && right instanceof Character) return;
 
+        // Console.debug(left.getClass().getName() + " " + right.getClass().getName());
         throw new RuntimeError(operator, "Operands must be numbers.");
     }
 
@@ -536,7 +691,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitFunctionStmt(Stmt.Function stmt) {
-        PascalFunction function = new PascalFunction(stmt, environment, false);
+        var function = new PascalFunction(stmt, environment, false);
         environment.define(stmt.name.lexeme, function);
         return null;
     }
@@ -586,4 +741,6 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         environment.define(stmt.name.lexeme, value);
         return null;
     }
+
+    private static interface Assertion extends PascalCallable {}
 }

@@ -1,5 +1,6 @@
 package com.craftinginterpreters.pascal;
 
+import javax.xml.transform.Source;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -8,11 +9,14 @@ import java.util.Map;
 import static com.craftinginterpreters.pascal.TokenType.*;
 
 public class Scanner {
+    private final String fileName;
     private final String source;
     private final List<Token> tokens = new ArrayList<>();
     private int start = 0;
     private int current = 0;
     private int line = 1;
+
+    private int startOfLine = 0;
 
     private static final Map<String, TokenType> keywords;
     static {
@@ -52,8 +56,14 @@ public class Scanner {
         keywords.put("uses",  USES);
         keywords.put("const", CONST);
     }
-    Scanner(String source) {
+
+    public Scanner(String fileName, String source) {
+        this.fileName = fileName;
         this.source = source;
+    }
+
+    public Scanner(String source) {
+        this("test", source);
     }
 
     List<Token> scanTokens() {
@@ -62,7 +72,7 @@ public class Scanner {
             scanToken();
         }
 
-        tokens.add(new Token(EOF, "", null, line));
+        tokens.add(new Token(EOF, "", null, line, 0, fileName));
         return tokens;
     }
 
@@ -118,6 +128,8 @@ public class Scanner {
                 break;
 
             case '\n':
+                SourceCode.INSTANCE.addLine(fileName, line, source.substring(startOfLine, current - 1));
+                startOfLine = current;
                 line++;
                 break;
 
@@ -203,7 +215,7 @@ public class Scanner {
 
         while (isDigit(peek())) advance();
 
-        addToken(CHAR, Integer.parseInt(source.substring(start + 1, current)));
+        addToken(CHAR, (char) Integer.parseInt(source.substring(start + 1, current)));
     }
 
     private boolean match(char expected) {
@@ -252,6 +264,7 @@ public class Scanner {
 
     private void addToken(TokenType type, Object literal) {
         var text = source.substring(start, current);
-        tokens.add(new Token(type, text, literal, line));
+        var token = new Token(type, text, literal, line, (start - startOfLine), fileName);
+        tokens.add(token);
     }
 }

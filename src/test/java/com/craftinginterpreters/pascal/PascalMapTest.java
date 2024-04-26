@@ -16,7 +16,7 @@ public class PascalMapTest {
     void testMap() {
         var uut = new PascalMap();
 
-        var add = (PascalCallable) uut.get(new Token(TokenType.IDENTIFIER, "put", null, 0));
+        var add = (PascalCallable) uut.get(new Token(TokenType.IDENTIFIER, "put", null, 0, 0, "test"));
         assertEquals(2, add.arity());
 
         var args = new ArrayList<>();
@@ -24,7 +24,7 @@ public class PascalMapTest {
         args.add("ABC");
         add.call(null, args);
 
-        var get = (PascalCallable) uut.get(new Token(TokenType.IDENTIFIER, "get", null, 0));
+        var get = (PascalCallable) uut.get(new Token(TokenType.IDENTIFIER, "get", null, 0, 0, "test"));
         assertEquals(1, get.arity());
 
         args = new ArrayList<>();
@@ -32,7 +32,7 @@ public class PascalMapTest {
         var value = get.call(null, args);
         assertEquals("ABC", value);
 
-        var contains = (PascalCallable) uut.get(new Token(TokenType.IDENTIFIER, "contains", null, 0));
+        var contains = (PascalCallable) uut.get(new Token(TokenType.IDENTIFIER, "contains", null, 0, 0, "test"));
         assertEquals(1, contains.arity());
         args = new ArrayList<>();
         args.add(1);
@@ -49,7 +49,7 @@ public class PascalMapTest {
         var ex = assertThrows(RuntimeError.class, () -> {
             var uut = new PascalMap();
 
-            uut.get(new Token(TokenType.IDENTIFIER, "invalid", null, 0));
+            uut.get(new Token(TokenType.IDENTIFIER, "invalid", null, 0, 0, "test"));
         });
         assertEquals("Undefined property 'invalid'.", ex.getMessage());
     }
@@ -61,7 +61,7 @@ public class PascalMapTest {
           var ex = assertThrows(RuntimeError.class, () -> {
             var uut = new PascalMap();
 
-            uut.set(new Token(TokenType.IDENTIFIER, "invalid", null, 0), 1);
+            uut.set(new Token(TokenType.IDENTIFIER, "invalid", null, 0, 0, "test"), 1);
         });
         assertEquals("Can't add properties to maps.", ex.getMessage());
     }

@@ -20,7 +20,7 @@ public class PascalFunctionTest {
                exit fib(n - 1) + fib(n - 2);
            end""";
 
-        var scanner = new Scanner(code);
+        var scanner = new Scanner("test", code);
         var tokens = scanner.scanTokens();
 
         var parser = new Parser(tokens, false);
@@ -59,7 +59,7 @@ public class PascalFunctionTest {
                exit fib(n - 1.0) + fib(n - 2.0);
            end""";
 
-        var scanner = new Scanner(code);
+        var scanner = new Scanner("test", code);
         var tokens = scanner.scanTokens();
 
         var parser = new Parser(tokens, false);

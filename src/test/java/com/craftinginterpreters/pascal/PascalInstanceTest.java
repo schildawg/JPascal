@@ -28,7 +28,7 @@ public class PascalInstanceTest {
         var klass = new PascalClass("Bagel", null, new HashMap<>());
         var uut = new PascalInstance(klass);
 
-        var token = new Token(TokenType.STRING, "ABC", null, 1);
+        var token = new Token(TokenType.STRING, "ABC", null, 1, 0, "test");
 
         uut.set(token, 123.0);
         assertEquals(123.0, uut.get(token));
@@ -42,7 +42,7 @@ public class PascalInstanceTest {
         var uut = new PascalInstance(klass);
 
         var ex = assertThrows(RuntimeError.class, () -> {
-            uut.get(new Token(TokenType.STRING, "ABC", null, 1));
+            uut.get(new Token(TokenType.STRING, "ABC", null, 1, 0, "test"));
         });
         assertEquals("Undefined property 'ABC'.", ex.getMessage());
     }

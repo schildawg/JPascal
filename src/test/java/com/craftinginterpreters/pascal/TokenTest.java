@@ -13,7 +13,7 @@ public class TokenTest {
     //
     @Test
     void testCreateToken() {
-        var token = new Token(TokenType.STRING, "ABC", null, 1);
+        var token = new Token(TokenType.STRING, "ABC", null, 1, 0, "test");
 
         assertEquals(TokenType.STRING, token.type);
         assertEquals("ABC", token.lexeme);
@@ -25,7 +25,7 @@ public class TokenTest {
     //
     @Test
     void testToString() {
-        var token = new Token(TokenType.STRING, "ABC", null, 1);
+        var token = new Token(TokenType.STRING, "ABC", null, 1, 0, "test");
 
         assertEquals("STRING ABC ", token.toString());
     }
