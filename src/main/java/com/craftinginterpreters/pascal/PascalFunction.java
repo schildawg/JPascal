@@ -25,6 +25,26 @@ public class PascalFunction implements PascalCallable {
         this.isInitializer = isInitializer;
     }
 
+    public String getSignature() {
+       List<String> types = new ArrayList<>();
+       for (var type : declaration.types) {
+           types.add(type.lexeme);
+       }
+       return declaration.name.lexeme + "(" + String.join(",", types) + ")";
+    }
+
+    public PascalInstance getParent() {
+        Object instance = null;
+        try {
+            instance = closure.get(new Token(TokenType.IDENTIFIER, "this", null, 0, 0, null));
+        }
+        catch (RuntimeError e) {}
+
+        if (instance instanceof PascalInstance e) {
+            return e;
+        }
+        return null;
+    }
 
     protected PascalFunction bind(PascalInstance instance) {
         var environment = new Environment(closure);

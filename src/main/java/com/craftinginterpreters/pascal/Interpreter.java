@@ -466,6 +466,14 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             // look in overloads
             function = fun.match(types);
 
+            if (function == null) {
+                var parent = fun.getParent();
+                if (parent != null) {
+                    function = parent.klass.findMethod(fun.declaration.name.lexeme, types);
+                    function = ((PascalFunction)function).bind(parent);
+                }
+            }
+
             // walk up environments...
             if (function == null ) {
                 function = environment.findFunction(fun.declaration.name, types);
@@ -573,9 +581,11 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         catch (Exception e) {
             try {
                 var object = environment.get(new Token(TokenType.THIS, "this", null, expr.name.line, 0, null));
+
                 return ((PascalInstance) object).get(new Token(TokenType.IDENTIFIER, expr.name.lexeme, null, expr.name.line, 0, null));
             }
             catch (Exception e2) {
+                System.out.println(e2.getMessage());
                 throw e;
             }
         }
@@ -583,6 +593,18 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Object visitSetExpr(Expr.Set expr) {
+        var object = evaluate(expr.object);
+
+        if (!(object instanceof PascalInstance)) {
+            throw new RuntimeError(expr.name, "Only instances have fields.");
+        }
+        var value = evaluate(expr.value);
+        ((PascalInstance)object).set(expr.name, value);
+        return value;
+    }
+
+    @Override
+    public Object visitClassVarExpr(Expr.ClassVar expr) {
         var object = evaluate(expr.object);
 
         if (!(object instanceof PascalInstance)) {
@@ -706,7 +728,13 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         Map<String, PascalFunction> methods = new HashMap<>();
         for (Stmt.Function method : stmt.methods) {
             var function = new PascalFunction(method, environment, method.name.lexeme.equals("Init"));
-            methods.put(method.name.lexeme, function);
+            if (methods.containsKey(method.name.lexeme)) {
+                var first = methods.get(method.name.lexeme);
+                first.overloads.add(function);
+            }
+            else {
+                methods.put(method.name.lexeme, function);
+            }
         }
         var klass = new PascalClass(stmt.name.lexeme, (PascalClass) superclass, methods);
 
@@ -755,13 +783,13 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         for (var type : stmt.types) {
             args.add(type.lexeme);
         }
-
         if (environment.values.containsKey(stmt.name.lexeme)) {
             var value = environment.values.get(stmt.name.lexeme);
-            if (value instanceof PascalFunction fun) {
-                fun.overloads.add(function);
-                return null;
-            }
+//            if (value instanceof PascalFunction fun) {
+//                System.out.println("ADDING OVERLOAD");
+//                fun.overloads.add(function);
+//                return null;
+//            }
             throw new RuntimeError(stmt.name, "Variable already exists!" + value.getClass());
         }
         environment.define(stmt.name.lexeme, function);

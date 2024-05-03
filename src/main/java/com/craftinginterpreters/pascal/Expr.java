@@ -15,6 +15,7 @@ abstract class Expr {
         R visitLogicalExpr(Logical expr);
         R visitVariableExpr(Variable expr);
         R visitSetExpr(Set expr);
+        R visitClassVarExpr(ClassVar expr);
         R visitSuperExpr(Super expr);
         R visitSubscriptExpr(Subscript expr);
         R visitThisExpr(This expr);
@@ -266,6 +267,9 @@ abstract class Expr {
                 else if ("Length".equalsIgnoreCase(name.lexeme)) {
                     return "Integer";
                 }
+                else if ("List".equalsIgnoreCase(name.lexeme)) {
+                    return "List";
+                }
                 return "Any";
                 //throw new RuntimeException(name.lexeme + " " + name.fileName + name.line);
             }
@@ -287,6 +291,25 @@ abstract class Expr {
 
         final Expr object;
         final Token name;
+        final Expr value;
+    }
+
+    static class ClassVar extends Expr {
+        ClassVar(Expr object, Token name, String type, Expr value) {
+            this.object = object;
+            this.name = name;
+            this.type = type;
+            this.value = value;
+        }
+
+        @Override
+        <R> R accept(Visitor<R> visitor) {
+            return visitor.visitClassVarExpr(this);
+        }
+
+        final Expr object;
+        final Token name;
+        final String type;
         final Expr value;
     }
 

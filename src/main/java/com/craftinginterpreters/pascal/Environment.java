@@ -67,7 +67,11 @@ class Environment {
     }
 
     public PascalFunction findFunction(Token name, List<String> types) {
-        var function = get(name);
+        Object function = null;
+        try {
+            function = get(name);
+        } catch (RuntimeError e) {}
+
         if (function != null && function instanceof PascalFunction fun) {
             var matched = fun.match(types);
             if (matched != null) {

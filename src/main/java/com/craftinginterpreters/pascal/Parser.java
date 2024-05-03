@@ -156,7 +156,8 @@ public class Parser {
             consume(RIGHT_PAREN, "Expect ')' after superclass name.");
         }
         consume(SEMICOLON, "Expect ';' after class declaration.");
-        
+
+        List<Expr> initializers = new ArrayList<>();
         List<Stmt> body = new ArrayList<>();
         while (isDeclarationSection()) {
            if (match(TYPE)) {
@@ -165,7 +166,15 @@ public class Parser {
                }
            }
            else if (match(VAR)) {
-               body.addAll(variableSection());
+               for (var stmt : variableSection()) {
+                   if (stmt instanceof Stmt.Var v) {
+                       var type = v.type;
+                       if (type == null) {
+                           type = "Any";
+                       }
+                       initializers.add(new Expr.ClassVar(new Expr.This(v.name), v.name, type, new Expr.Variable(v.name)));
+                   }
+               }
            }
        }
 
@@ -179,7 +188,7 @@ public class Parser {
         }
         consume(END, "Expect 'end' after class body.");
 
-        return new Stmt.Class(name, superclass, methods);
+        return new Stmt.Class(name, superclass, initializers, methods);
     }
 
     private Stmt typeDeclaration() {
@@ -361,7 +370,7 @@ public class Parser {
        var name = consume(IDENTIFIER, "Expect " + kind + " name.");
 
        List<Token> parameters = new ArrayList<>();
-        List<Token> parameterTypes = new ArrayList<>();
+       List<Token> parameterTypes = new ArrayList<>();
        if (match(LEFT_PAREN)) {
            if (!check(RIGHT_PAREN)) {
                do {
@@ -445,6 +454,7 @@ public class Parser {
                 stmts.add(new Stmt.Var(name, type, initializer));
             }
         }
+
         return stmts;
     }
 

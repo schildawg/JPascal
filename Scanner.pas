@@ -10,6 +10,12 @@ var LastError;
 /// Scanner
 ///
 class Scanner;
+var 
+    Source : String;
+    Tokens : List; // of Token
+
+    Current, Start, Line : Integer;
+
 begin
     /// Creates a new Scanner
     ///
@@ -25,7 +31,7 @@ begin
 
     /// Scans Tokens
     ///
-    function ScanTokens();
+    function ScanTokens() : List; // of Token
     begin
         while not IsAtEnd() do
         begin
@@ -116,7 +122,7 @@ begin
 
         while IsDigit(Peek()) do Advance();
 
-        AddToken2(TOKEN_NUMBER, Copy(Source, Start, Current));
+        AddToken(TOKEN_NUMBER, Copy(Source, Start, Current));
     end
 
     // Scans a String
@@ -140,7 +146,7 @@ begin
         // Trim the surrounding quotes
         var Value := Copy(Source, Start + 1, Current - 1);
 
-        AddToken2(TOKEN_STRING, Value);
+        AddToken(TOKEN_STRING, Value);
     end
 
     // Does the character match?  
@@ -176,12 +182,12 @@ begin
     //
     procedure AddToken(TypeOfToken);
     begin
-        AddToken2(TypeOfToken, nil);
+        AddToken(TypeOfToken, nil);
     end
 
     // Adds a Token.
     //
-    procedure AddToken2(TypeOfToken, Literal);
+    procedure AddToken(TypeOfToken, Literal);
     begin
         var Text := Copy(Source, Start, Current);
         Tokens.Add(Token(TypeOfToken, Text, Literal, Line));

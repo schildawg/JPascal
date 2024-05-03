@@ -9,7 +9,7 @@ import java.util.Map;
 public class PascalClass implements PascalCallable {
     final PascalClass superclass;
     public String name;
-    private final Map<String, PascalFunction> methods;
+    public final Map<String, PascalFunction> methods;
 
     /**
      * Constructor.
@@ -36,6 +36,16 @@ public class PascalClass implements PascalCallable {
         }
         if (superclass != null) {
             return superclass.findMethod(name);
+        }
+        return null;
+    }
+
+    protected PascalFunction findMethod(String name, List<String> types) {
+        if (methods.containsKey(name)) {
+            return methods.get(name).match(types);
+        }
+        if (superclass != null) {
+            return superclass.findMethod(name, types);
         }
         return null;
     }

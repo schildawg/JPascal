@@ -82,6 +82,10 @@ class TypeChecker implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
            //scopes.peek().put("super", true);
         }
 
+        for (Expr expr : stmt.initializers) {
+            resolve(expr);
+        }
+
         lookup.beginScope();
         //scopes.peek().put("this", true);
         for (Stmt.Function method : stmt.methods) {
@@ -164,7 +168,6 @@ class TypeChecker implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         resolve(expr.value);
         var type = lookup.getType(expr.name.lexeme);
         if (type == null) {
-            // Assume it's an Any for now
             return null;
             //throw new RuntimeError(expr.name, "Type not defined!");
         }
@@ -242,6 +245,23 @@ class TypeChecker implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitSetExpr(Expr.Set expr) {
+        var expected = lookup.getType(expr.name.lexeme);
+        var inferred = expr.value.reduce(lookup);
+
+        resolve(expr.value);
+        resolve(expr.object);
+
+        if (expected == null || "any".equalsIgnoreCase(expected)) return null;
+        if (!expected.equalsIgnoreCase(inferred)) {
+            throw new RuntimeError(expr.name, "Type mismatch.");
+        }
+        return null;
+    }
+
+    @Override
+    public Void visitClassVarExpr(Expr.ClassVar expr) {
+        lookup.setType(expr.name.lexeme, expr.type);
+
         resolve(expr.value);
         resolve(expr.object);
         return null;

@@ -7,7 +7,7 @@ import java.util.Map;
  * Instance for Pascal.
  */
 public class PascalInstance {
-    private final Map<String, Object> fields = new HashMap<>();
+    public final Map<String, Object> fields = new HashMap<>();
 
     public final PascalClass klass;
 
