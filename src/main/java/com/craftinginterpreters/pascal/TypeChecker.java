@@ -1,0 +1,286 @@
+package com.craftinginterpreters.pascal;
+
+import java.util.List;
+
+/**
+ * Type Checker.
+ */
+class TypeChecker implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
+     private Stmt.Function currentFunction = null;
+     private ClassType currentClass = ClassType.NONE;
+
+     private TypeLookup lookup = new TypeLookup();
+
+    TypeChecker() {
+        lookup.inferred = new TypeLookup();
+    }
+
+    private enum ClassType {
+        NONE,
+        SUBCLASS,
+        CLASS
+    }
+
+    void resolve(List<Stmt> statements) {
+        for (Stmt statement : statements) {
+            mapType(statement);
+        }
+
+        for (Stmt statement : statements) {
+            resolve(statement);
+        }
+    }
+
+    private void mapType(Stmt stmt) {
+        if (stmt instanceof Stmt.Enum e) {
+            for (var value : e.values) {
+                if (lookup.getType(value.lexeme) != null) {
+                    throw new RuntimeException(value.lexeme + "already exists!!!");
+                }
+                lookup.setType(value.lexeme, e.name.lexeme);
+            }
+        }
+        else if (stmt instanceof Stmt.Function e) {
+            lookup.setType(e.name.lexeme, e.returnType);
+        }
+        else if (stmt instanceof Stmt.Class e) {
+            lookup.setType(e.name.lexeme, e.name.lexeme);
+            for (var fun : e.methods) {
+                lookup.setType(e.name.lexeme + "::" + fun.name.lexeme, fun.returnType);
+            }
+        }
+        else if (stmt instanceof Stmt.Var e) {
+            lookup.setType(e.name.lexeme, e.type);
+        }
+    }
+
+    @Override
+    public Void visitBlockStmt(Stmt.Block stmt) {
+        lookup.beginScope();
+        resolve(stmt.statements);
+        lookup.endScope();
+        return null;
+    }
+
+    @Override
+    public Void visitEnumStmt(Stmt.Enum stmt) {
+        return null;
+    }
+
+    @Override
+    public Void visitClassStmt(Stmt.Class stmt) {
+        var enclosingClass = currentClass;
+        currentClass = ClassType.CLASS;
+
+        if (stmt.superclass != null) {
+            currentClass = ClassType.SUBCLASS;
+            resolve(stmt.superclass);
+        }
+
+        if (stmt.superclass != null) {
+            lookup.beginScope();
+           //scopes.peek().put("super", true);
+        }
+
+        lookup.beginScope();
+        //scopes.peek().put("this", true);
+        for (Stmt.Function method : stmt.methods) {
+            resolveFunction(method);
+        }
+
+        lookup.endScope();
+
+        if (stmt.superclass != null) lookup.endScope();
+
+        currentClass = enclosingClass;
+        return null;
+    }
+
+    @Override
+    public Void visitExpressionStmt(Stmt.Expression stmt) {
+        resolve(stmt.expression);
+        return null;
+    }
+
+    @Override
+    public Void visitFunctionStmt(Stmt.Function stmt) {
+        resolveFunction(stmt);
+        return null;
+    }
+
+    @Override
+    public Void visitIfStmt(Stmt.If stmt) {
+        resolve(stmt.condition);
+        resolve(stmt.thenBranch);
+        if (stmt.elseBranch != null) resolve(stmt.elseBranch);
+        return null;
+    }
+
+    @Override
+    public Void visitPrintStmt(Stmt.Print stmt) {
+        return null;
+    }
+
+    @Override
+    public Void visitReturnStmt(Stmt.Return stmt) {
+        if (stmt.value == null) return null;
+        if ("procedure".equalsIgnoreCase(currentFunction.type.lexeme)) {
+            throw new RuntimeError(stmt.keyword, "Can't return value from procedure.");
+        }
+        var exitType = stmt.value.reduce(lookup);
+        var returnType = currentFunction.returnType;
+
+        if ("any".equalsIgnoreCase(returnType)) return null;
+
+        if (!exitType.equalsIgnoreCase(returnType)) {
+            throw new RuntimeError(stmt.keyword, "Type mismatch!");
+        }
+        return null;
+    }
+
+    @Override
+    public Void visitVarStmt(Stmt.Var stmt) {
+        if (stmt.initializer != null) {
+            var type = stmt.initializer.reduce(lookup);
+            if ("any".equalsIgnoreCase(stmt.type)) {
+                lookup.inferred.setType(stmt.name.lexeme,  type);
+            }
+            else if (!stmt.type.equals(type)) {
+                throw new RuntimeError(stmt.name, "Type mismatch!");
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public Void visitWhileStmt(Stmt.While stmt) {
+        resolve(stmt.condition);
+        resolve(stmt.body);
+        return null;
+    }
+
+    @Override
+    public Void visitAssignExpr(Expr.Assign expr) {
+        resolve(expr.value);
+        var type = lookup.getType(expr.name.lexeme);
+        if (type == null) {
+            // Assume it's an Any for now
+            return null;
+            //throw new RuntimeError(expr.name, "Type not defined!");
+        }
+
+        var inferred = expr.value.reduce(lookup);
+
+        if ("any".equalsIgnoreCase(type)) {
+            // probably not needed, but set infer anyway.
+            lookup.inferred.setType(expr.name.lexeme, inferred);
+            return null;
+        }
+
+        if (!type.equalsIgnoreCase(inferred)) {
+            throw new RuntimeError(expr.name, "Type mismatch!");
+        }
+        return null;
+    }
+
+    @Override
+    public Void visitBinaryExpr(Expr.Binary expr) {
+        resolve(expr.left);
+        resolve(expr.right);
+        return null;
+    }
+
+    @Override
+    public Void visitCallExpr(Expr.Call expr) {
+        resolve(expr.callee);
+
+        for (Expr argument : expr.arguments) {
+            resolve(argument);
+        }
+        return null;
+    }
+
+    @Override
+    public Void visitGetExpr(Expr.Get expr) {
+        resolve(expr.object);
+        return null;
+    }
+
+    @Override
+    public Void visitGroupingExpr(Expr.Grouping expr) {
+        resolve(expr.expression);
+        return null;
+    }
+
+    @Override
+    public Void visitLiteralExpr(Expr.Literal expr) {
+        return null;
+    }
+
+    @Override
+    public Void visitMapExpr(Expr.Map expr) {
+        return null;
+    }
+
+    @Override
+    public Void visitLogicalExpr(Expr.Logical expr) {
+        resolve(expr.left);
+        resolve(expr.right);
+        return null;
+    }
+
+    @Override
+    public Void visitUnaryExpr(Expr.Unary expr) {
+        resolve(expr.right);
+        return null;
+    }
+
+    @Override
+    public Void visitVariableExpr(Expr.Variable expr) {
+        return null;
+    }
+
+    @Override
+    public Void visitSetExpr(Expr.Set expr) {
+        resolve(expr.value);
+        resolve(expr.object);
+        return null;
+    }
+
+    @Override
+    public Void visitSuperExpr(Expr.Super expr) {
+        return null;
+    }
+
+    @Override
+    public Void visitSubscriptExpr(Expr.Subscript expr) {
+        resolve(expr.expr);
+        resolve(expr.index);
+
+        return null;
+    }
+
+    @Override
+    public Void visitThisExpr(Expr.This expr) {
+        return null;
+    }
+
+    private void resolve(Stmt stmt) {
+        stmt.accept(this);
+    }
+
+    private void resolve(Expr expr) {
+        expr.accept(this);
+    }
+
+    private void resolveFunction(Stmt.Function function) {
+        Stmt.Function enclosingFunction = currentFunction;
+        currentFunction = function;
+
+        lookup.beginScope();
+        resolve(function.body);
+        lookup.endScope();
+
+        currentFunction = enclosingFunction;
+    }
+}

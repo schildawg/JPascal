@@ -148,7 +148,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             public Object call(Interpreter interpreter, List<Object> arguments) {
                 var s = arguments.get(0);
 
-                System.out.println(s.toString());
+                System.out.println(stringify(s));
                 return null;
             }
         });
@@ -166,6 +166,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             }
         }
         catch (RuntimeError error) {
+            Console.error(error);
             errorHandler.runtimeError(error);
         }
     }
@@ -238,7 +239,8 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                     try {
                         var test = (PascalCallable) lookupVariable(fun.name, null);
                         test.call(this, new ArrayList<>());
-                        Console.info("Test: " + fun.name.literal + " " + ".".repeat(55 - fun.name.literal.toString().length()) + " [ " + Console.ANSI_GREEN + "PASS" + Console.ANSI_RESET + " ]");
+                        if (fun.name != null && fun.name.literal != null)
+                            Console.info("Test: " + fun.name.literal + " " + ".".repeat(55 - fun.name.literal.toString().length()) + " [ " + Console.ANSI_GREEN + "PASS" + Console.ANSI_RESET + " ]");
                     }
                     catch (RuntimeError error) {
                         Console.info("Test: " + fun.name.literal + " " + ".".repeat(55 - fun.name.literal.toString().length()) + " [ " + Console.ANSI_RED + "FAIL" + Console.ANSI_RESET + " ]");
@@ -392,7 +394,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         return null;
     }
 
-    private Object lookupCall(Expr expr) {
+    private Object lookupCallInternal(Expr expr) {
         try {
             return evaluate(expr);
         }
@@ -410,6 +412,36 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         }
     }
 
+    private Object lookupCall(Expr expr) {
+        return lookupCallInternal(expr);
+    }
+
+    public String type(Object obj) {
+        if (obj == null) {
+            return "Any";
+        }
+
+        var map = new HashMap<Class, String>();
+        map.put(String.class, "String");
+        map.put(Integer.class, "Integer");
+        map.put(Boolean.class, "Boolean");
+        map.put(Character.class, "Char");
+        map.put(Double.class, "Double");
+
+        if (map.containsKey(obj.getClass()))  {
+            return map.get(obj.getClass());
+        }
+
+        if (obj instanceof PascalEnum e) {
+            return e.enumName;
+        }
+
+        if (obj instanceof PascalInstance e) {
+            return e.klass.name;
+        }
+        return "Any";
+    }
+
     @Override
     public Object visitCallExpr(Expr.Call expr) {
         var callee = lookupCall(expr.callee);
@@ -419,11 +451,35 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             arguments.add(evaluate(argument));
         }
 
+        List<String> types = new ArrayList<>();
+        for (var arg : arguments) {
+            types.add(type(arg));
+        }
+
         if (!(callee instanceof PascalCallable)) {
             throw new RuntimeError(expr.paren, "Can only call functions and classes.");
         }
 
         var function = (PascalCallable) callee;
+
+        if (function instanceof PascalFunction fun) {
+            // look in overloads
+            function = fun.match(types);
+
+            // walk up environments...
+            if (function == null ) {
+                function = environment.findFunction(fun.declaration.name, types);
+            }
+
+            // check in globals
+            if (function == null ) {
+                function = globals.findFunction(fun.declaration.name, types);
+            }
+            if (function == null) {
+                throw new RuntimeError(expr.paren, "No matching signature for function.");
+            }
+        }
+
         if (arguments.size() != function.arity()) {
             throw new RuntimeError(expr.paren, "Expected " + function.arity() + " arguments but got " + arguments.size() + ".");
         }
@@ -469,9 +525,8 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         var previous = this.environment;
         try {
             this.environment = environment;
-
-            for (Stmt statement : statements) {
-                execute(statement);
+            for (Stmt stmt : statements) {
+                execute(stmt);
             }
         }
         finally {
@@ -575,7 +630,8 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                 return !isTruthy(right);
             case MINUS:
                 checkNumberOperand(expr.operator, right);
-                return -(double)right;
+                if (right instanceof Integer) return  -(int)right;
+                else return -(double)right;
         }
         // unreachable
         return null;
@@ -601,6 +657,9 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     private boolean isTruthy(Object object) {
         if (object == null) return false;
         if (object instanceof Boolean) return (boolean)object;
+        if (object instanceof Integer) return ((int)object != 0);
+        if (object instanceof PascalEnum e) return e.value != 0;
+
         return true;
     }
 
@@ -646,8 +705,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         }
         Map<String, PascalFunction> methods = new HashMap<>();
         for (Stmt.Function method : stmt.methods) {
-            PascalFunction function = new PascalFunction(method, environment,
-                    method.name.lexeme.equals("Init"));
+            var function = new PascalFunction(method, environment, method.name.lexeme.equals("Init"));
             methods.put(method.name.lexeme, function);
         }
         var klass = new PascalClass(stmt.name.lexeme, (PascalClass) superclass, methods);
@@ -661,7 +719,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitEnumStmt(Stmt.Enum stmt) {
-        int  count = 1;
+        int  count = 0;
         for (var value : stmt.values) {
             environment.define(value.lexeme, new PascalEnum(stmt.name.lexeme, value.lexeme, count++));
         }
@@ -692,7 +750,22 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Void visitFunctionStmt(Stmt.Function stmt) {
         var function = new PascalFunction(stmt, environment, false);
+
+        List<String> args = new ArrayList<>();
+        for (var type : stmt.types) {
+            args.add(type.lexeme);
+        }
+
+        if (environment.values.containsKey(stmt.name.lexeme)) {
+            var value = environment.values.get(stmt.name.lexeme);
+            if (value instanceof PascalFunction fun) {
+                fun.overloads.add(function);
+                return null;
+            }
+            throw new RuntimeError(stmt.name, "Variable already exists!" + value.getClass());
+        }
         environment.define(stmt.name.lexeme, function);
+
         return null;
     }
 
@@ -737,7 +810,6 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         if (stmt.initializer != null) {
             value = evaluate(stmt.initializer);
         }
-
         environment.define(stmt.name.lexeme, value);
         return null;
     }

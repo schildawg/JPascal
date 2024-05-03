@@ -36,7 +36,7 @@ public class Console {
         info("< " + ANSI_CYAN + name + ANSI_RESET + " >" );
     }
     public static void info(String text) {
-        System.out.println(ANSI_WHITE + "[" + ANSI_BLUE + "INFO" + ANSI_WHITE + "] " + ANSI_RESET + text);
+        write(ANSI_WHITE + "[" + ANSI_BLUE + "INFO" + ANSI_WHITE + "] " + ANSI_RESET + text);
     }
 
     // Outputs a build success:
@@ -72,15 +72,19 @@ public class Console {
         var text = SourceCode.INSTANCE.getLine(file, line);
 
         var lineLength = String.valueOf(line).length();
-        System.out.println(ANSI_WHITE + "[" + ANSI_RED + "ERROR" + ANSI_WHITE + "] " + ANSI_RESET + err.getMessage());
-        System.out.println(ANSI_WHITE + "[" + ANSI_RED + "ERROR" + ANSI_WHITE + "] " + ANSI_RESET + line + " ║ " + text);
-        System.out.println(ANSI_WHITE + "[" + ANSI_RED + "ERROR" + ANSI_RESET + "] " + " ".repeat(lineLength) + " ║"  + ANSI_RED + " ".repeat(err.token.offset + 1) + "^".repeat(err.token.lexeme.length()) + ANSI_RESET);
+        write(ANSI_WHITE + "[" + ANSI_RED + "ERROR" + ANSI_WHITE + "] " + ANSI_RESET + err.getMessage());
+        write(ANSI_WHITE + "[" + ANSI_RED + "ERROR" + ANSI_WHITE + "] " + ANSI_RESET + line + " ║ " + text);
+        write(ANSI_WHITE + "[" + ANSI_RED + "ERROR" + ANSI_RESET + "] " + " ".repeat(lineLength) + " ║"  + ANSI_RED + " ".repeat(err.token.offset + 1) + "^".repeat(err.token.lexeme.length()) + ANSI_RESET);
     }
 
     // Outputs a debug message
     // [DEBUG] Abc is equal to 123.
     //
     public static void debug(String text) {
-        System.out.println(ANSI_WHITE + "[" + ANSI_YELLOW + "DEBUG" + ANSI_WHITE + "] " + ANSI_RESET + text);
+        write(ANSI_WHITE + "[" + ANSI_YELLOW + "DEBUG" + ANSI_WHITE + "] " + ANSI_RESET + text);
+    }
+
+    private static void write(String string) {
+        System.out.println(string);
     }
 }

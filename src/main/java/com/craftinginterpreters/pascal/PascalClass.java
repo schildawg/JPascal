@@ -8,7 +8,7 @@ import java.util.Map;
  */
 public class PascalClass implements PascalCallable {
     final PascalClass superclass;
-    final String name;
+    public String name;
     private final Map<String, PascalFunction> methods;
 
     /**

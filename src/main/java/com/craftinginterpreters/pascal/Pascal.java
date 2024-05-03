@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 
 
 public class Pascal {
@@ -59,7 +60,7 @@ public class Pascal {
         var tokens = scanner.scanTokens();
 
         var parser = new Parser(tokens);
-        var statements = parser.parse();
+        List<Stmt> statements = parser.parseWithError();
 
         if (hadError) {
             Console.info(Console.BAR);
@@ -75,9 +76,18 @@ public class Pascal {
         var resolver = new Resolver(interpreter);
         resolver.resolve(statements);
 
+        try {
+            var typeEnforcer = new TypeChecker();
+            typeEnforcer.resolve(statements);
+        }
+        catch (RuntimeError e) {
+            Console.error(e);
+            hadError = true;
+        }
         // Stop if there was a resolution error.
         if (hadError) return;
         interpreter.runTests(statements);
+        //interpreter.interpret(statements);
     }
 
     static void error(int line, String message) {
@@ -86,23 +96,19 @@ public class Pascal {
 
     private static void report(int line, String where, String message) {
         lastError = "[line " + line + "] Error" + where + ": " + message;
-        //System.err.println(lastError);
-        //Console.error(line, where, message);
         hadError = true;
     }
 
     static void error(Token token, String message) {
         if (token.type == TokenType.EOF) {
             report(token.line, " at end", message);
-        } else {
+        } 
+        else {
             report(token.line, " at '" + token.lexeme + "'", message);
         }
     }
 
     static void runtimeError(RuntimeError error) {
-        //System.err.println(error.getMessage() +
-        //        "\n[line " + error.token.line + "]");
-
         hadRuntimeError = true;
     }
 }

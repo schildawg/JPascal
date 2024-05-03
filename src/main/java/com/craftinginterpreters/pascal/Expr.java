@@ -1,5 +1,6 @@
 package com.craftinginterpreters.pascal;
 
+import java.util.HashMap;
 import java.util.List;
 
 abstract class Expr {
@@ -49,6 +50,29 @@ abstract class Expr {
         final Expr left;
         final Token operator;
         final Expr right;
+
+        public String reduce(TypeLookup lookup) {
+            if (operator.type == TokenType.LESS || operator.type == TokenType.LESS_EQUAL || operator.type == TokenType.GREATER || operator.type == TokenType.GREATER_EQUAL || operator.type == TokenType.EQUAL || operator.type == TokenType.NOT_EQUAL) {
+                // TODO: Add checking
+                return "Boolean";
+            }
+
+            var leftType = left.reduce(lookup);
+            var rightType = right.reduce(lookup);
+            if ("any".equalsIgnoreCase(leftType) || "any".equalsIgnoreCase(rightType)) {
+                return leftType;
+            }
+
+            if ("String".equals(leftType) || "String".equals(rightType)) {
+                if (operator.type == TokenType.PLUS) {
+                    return "String";
+                }
+            }
+            if (!leftType.equals(rightType)) {
+                throw new RuntimeError(operator, "Type mismatch.");
+            }
+            return leftType;
+        }
     }
 
     static class Call extends Expr {
@@ -66,6 +90,23 @@ abstract class Expr {
         final Expr callee;
         final Token paren;
         final List<Expr> arguments;
+
+        public String reduce(TypeLookup lookup) {
+            var result = callee.reduce(lookup);
+            if (callee instanceof Expr.Variable e) {
+                // TODO: Make this better
+                if ("Str".equalsIgnoreCase(e.name.lexeme)) {
+                    return "String";
+                }
+                else if ("Copy".equalsIgnoreCase(e.name.lexeme)) {
+                    return "String";
+                }
+                else if ("Length".equalsIgnoreCase(e.name.lexeme)) {
+                    return "Integer";
+                }
+            }
+            return result == null ? "Any" : result;
+        }
     }
 
     static class Subscript extends Expr {
@@ -98,6 +139,16 @@ abstract class Expr {
 
         final Expr object;
         final Token name;
+
+        public String reduce(TypeLookup lookup) {
+            var klass = object.reduce(lookup);
+
+            if ("any".equalsIgnoreCase(klass)) {
+                klass = object.reduce(lookup.inferred);
+            }
+
+            return lookup.getType( klass + "::" + name.lexeme);
+        }
     }
 
     static class Grouping extends Expr {
@@ -111,6 +162,10 @@ abstract class Expr {
         }
 
         final Expr expression;
+
+        public String reduce(TypeLookup lookup) {
+            return expression.reduce(lookup);
+        }
     }
 
     static class Literal extends Expr {
@@ -124,6 +179,24 @@ abstract class Expr {
         }
 
         final Object value;
+
+        public String reduce(TypeLookup lookup) {
+            var map = new HashMap<Class, String>();
+            map.put(String.class, "String");
+            map.put(Integer.class, "Integer");
+            map.put(Boolean.class, "Boolean");
+            map.put(Character.class, "Char");
+            map.put(Double.class, "Double");
+
+            if (map.containsKey(value.getClass()))  {
+                return map.get(value.getClass());
+            }
+
+            if (value instanceof PascalInstance e) {
+                return e.klass.name;
+            }
+            return "Any";
+        }
     }
 
     static class Map extends Expr {
@@ -154,6 +227,20 @@ abstract class Expr {
         final Expr left;
         final Token operator;
         final Expr right;
+
+        public String reduce(TypeLookup lookup) {
+            var leftType = left.reduce(lookup);
+            var rightType = right.reduce(lookup);
+
+            if ("any".equalsIgnoreCase(leftType) || "any".equalsIgnoreCase(rightType)) {
+                return "Boolean";
+            }
+
+            if (!leftType.equals(rightType)) {
+                throw new RuntimeError(operator, "Type mismatch.");
+            }
+            return "Boolean";
+        }
     }
 
     static class Variable extends Expr {
@@ -167,6 +254,23 @@ abstract class Expr {
         }
 
         final Token name;
+
+        public String reduce(TypeLookup lookup) {
+            if (lookup.getType(name.lexeme) == null) {
+                if ("Str".equalsIgnoreCase(name.lexeme)) {
+                    return "String";
+                }
+                else if ("Copy".equalsIgnoreCase(name.lexeme)) {
+                    return "String";
+                }
+                else if ("Length".equalsIgnoreCase(name.lexeme)) {
+                    return "Integer";
+                }
+                return "Any";
+                //throw new RuntimeException(name.lexeme + " " + name.fileName + name.line);
+            }
+            return lookup.getType(name.lexeme);
+        }
     }
 
     static class Set extends Expr {
@@ -227,7 +331,15 @@ abstract class Expr {
 
         final Token operator;
         final Expr right;
+
+        public String reduce(TypeLookup lookup) {
+            return right.reduce(lookup);
+        }
     }
 
     abstract <R> R accept(Visitor<R> visitor);
+
+    public String reduce(TypeLookup lookup) {
+        return "Any";
+    }
 }

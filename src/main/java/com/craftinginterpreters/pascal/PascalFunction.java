@@ -1,14 +1,16 @@
 package com.craftinginterpreters.pascal;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Function in Pascal.
  */
 public class PascalFunction implements PascalCallable {
-    private final Stmt.Function declaration;
+    public final Stmt.Function declaration;
     private final Environment closure;
     private final boolean isInitializer;
+    public final List<PascalFunction> overloads = new ArrayList<>();
 
     /**
      * Constructor.
@@ -22,6 +24,7 @@ public class PascalFunction implements PascalCallable {
         this.closure = closure;
         this.isInitializer = isInitializer;
     }
+
 
     protected PascalFunction bind(PascalInstance instance) {
         var environment = new Environment(closure);
@@ -38,6 +41,36 @@ public class PascalFunction implements PascalCallable {
     @Override
     public int arity() {
         return declaration.params.size();
+    }
+
+    public boolean isMatch(List<String> args) {
+        if (args.size() != declaration.types.size()) {
+            return false;
+        }
+
+        int i = 0;
+        for (var token : declaration.types) {
+            if ("any".equalsIgnoreCase(token.lexeme)) continue;
+
+            if (!token.lexeme.equalsIgnoreCase(args.get(i))) {
+                return false;
+            }
+            i++;
+        }
+        return true;
+    }
+
+    public PascalFunction match(List<String> args) {
+        if (isMatch(args)) {
+            return this;
+        }
+
+        for (var fun : overloads) {
+            if (fun.isMatch(args)) {
+                return fun;
+            }
+        }
+        return null;
     }
 
     /**

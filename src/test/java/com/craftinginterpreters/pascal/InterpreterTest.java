@@ -1080,6 +1080,50 @@ public class InterpreterTest {
         assertEquals("Expect parameter name.", ex.getMessage());
     }
 
+    // Tests procedure.
+    //
+    @Test
+    void testProcedure() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var stmts = parseStmts("""
+            procedure Test(A, B);
+            begin
+                Abc := 7;
+            end
+            
+            var Abc := 1;
+            Test(1, 2);""");
+
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
+        interpreter.interpret(stmts);
+
+        var result =  interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0, 0, "test"));
+
+        assertEquals(7, result);
+    }
+
+    // Procedure define should fail if adding a return type.
+    //
+    @Test
+    void testProcedureWithReturnType() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var ex = assertThrows(Parser.ParseError.class, () -> {
+            var stmts = parseStmts("""
+                procedure Test(A,B) : Integer;
+                begin
+                    Abc := 7;
+                end""");
+
+            var resolver = new Resolver(interpreter);
+            resolver.resolve(stmts);
+            interpreter.interpret(stmts);
+        });
+        assertEquals("Procedures cannot have return type.", ex.getMessage());
+    }
+
     // Tests Exit statement.
     //
     @Test
@@ -1224,7 +1268,7 @@ public class InterpreterTest {
 
             interpreter.interpret(stmts);
         });
-        assertEquals("Expected 3 arguments but got 0.", ex.getMessage());
+        assertEquals("No matching signature for function.", ex.getMessage());
     }
 
     // Tests class declaration.

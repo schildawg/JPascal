@@ -9,7 +9,7 @@ import java.util.Map;
 public class PascalInstance {
     private final Map<String, Object> fields = new HashMap<>();
 
-    private final PascalClass klass;
+    public final PascalClass klass;
 
     /**
      * Constructor.

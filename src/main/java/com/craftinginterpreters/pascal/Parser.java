@@ -16,6 +16,7 @@ public class Parser {
 
     private static final Set<String> uses = new HashSet<>();
     private final List<ParseError> errors = new ArrayList<>();
+    private final Map<String, String> types = new HashMap<>();
 
     static class ParseError extends RuntimeException {
         public Token token;
@@ -38,7 +39,7 @@ public class Parser {
         this.synchronize = synchronize;
     }
 
-    List<Stmt> parse() {
+    public List<Stmt> parse() {
         //try {
             List<Stmt> statements = new ArrayList<>();
             while (!isAtEnd()) {
@@ -47,7 +48,7 @@ public class Parser {
                 }
                 else if (check(IDENTIFIER, "test") && checkNext(STRING)) {
                     // context-based keyword "test"
-                    advance();
+                    var type = advance();
 
                     var name = consume(STRING, "Expect test case name.");
                     consume(SEMICOLON, "Expect ';'");
@@ -56,7 +57,7 @@ public class Parser {
                     List<Stmt> body = new ArrayList<>();
                     body.addAll(block());
 
-                    statements.add(new Stmt.Function(name, new ArrayList<>(), body));
+                    statements.add(new Stmt.Function(name, type, "Any", new ArrayList<>(), new ArrayList<>(), body));
                 }
                 else {
                     statements.add(declaration());
@@ -70,6 +71,17 @@ public class Parser {
 //        }
     }
 
+    /// WHY????
+    public List<Stmt> parseWithError() {
+        try {
+            return parse();
+        }
+        catch (ParseError e) {
+            errors.add(e);
+            return new ArrayList<>();
+        }
+    }
+
     protected Expr expression() {
         return assignment();
     }
@@ -77,13 +89,17 @@ public class Parser {
     private Stmt declaration() {
         try {
             if (match(CLASS)) return classDeclaration();
-            if (match(FUNCTION)) return function("function");
+            if (match(FUNCTION)) return function(previous(), "function");
+            if (match(PROCEDURE)) return function(previous(), "function");
             if (match(VAR)) return varDeclaration();
             if (match(TYPE)) return typeDeclaration();
 
             return statement();
         }
         catch (ParseError error) {
+            Console.error(new RuntimeError(error.token, error.getMessage()));
+            errors.add(error);
+
             if (!this.synchronize) throw error;
 
             synchronize();
@@ -94,7 +110,7 @@ public class Parser {
     private List<Stmt> usesStatement() {
         try {
             var name = consume(IDENTIFIER, "Expected identifier.");
-            var fileName = name.lexeme.toString();
+            var fileName = name.lexeme;
             consume(SEMICOLON, "Expected ';'");
 
             if  (!uses.contains(fileName)) {
@@ -140,13 +156,26 @@ public class Parser {
             consume(RIGHT_PAREN, "Expect ')' after superclass name.");
         }
         consume(SEMICOLON, "Expect ';' after class declaration.");
+        
+        List<Stmt> body = new ArrayList<>();
+        while (isDeclarationSection()) {
+           if (match(TYPE)) {
+               while (!isNextSection()) {
+                   body.add(typeDeclaration());
+               }
+           }
+           else if (match(VAR)) {
+               body.addAll(variableSection());
+           }
+       }
+
         consume(BEGIN, "Expect 'begin' before class body.");
 
         List<Stmt.Function> methods = new ArrayList<>();
         while (!check(END) && !isAtEnd()) {
             match(FUNCTION, PROCEDURE, CONSTRUCTOR);
 
-            methods.add(function("method"));
+            methods.add(function(previous(), "method"));
         }
         consume(END, "Expect 'end' after class body.");
 
@@ -161,7 +190,9 @@ public class Parser {
 
         List<Token> parameters = new ArrayList<>();
         do {
-            parameters.add(consume(IDENTIFIER, "Expect enum identifier."));
+            var param = consume(IDENTIFIER, "Expect enum identifier.");
+            parameters.add(param);
+            types.put(param.lexeme, name.lexeme);
         }
         while (match(COMMA));
         consume(RIGHT_PAREN, "Expect ')'");
@@ -293,6 +324,12 @@ public class Parser {
     private Stmt varDeclaration() {
         var name = consume(IDENTIFIER, "Expect variable name.");
 
+        var type = "Any";
+        if (match(COLON)) {
+            var token = consume(IDENTIFIER, "Expected type.");
+            type = token.lexeme;
+        }
+
         Expr initializer = null;
         if (match(ASSIGN)) {
             initializer = expression();
@@ -300,7 +337,7 @@ public class Parser {
 
         consume(SEMICOLON, "Expect ';' after variable declaration.");
 
-        return new Stmt.Var(name, initializer);
+        return new Stmt.Var(name, type, initializer);
     }
 
     private Stmt whileStatement() {
@@ -320,10 +357,11 @@ public class Parser {
         return new Stmt.Expression(value);
     }
 
-    private Stmt.Function function(String kind) {
+    private Stmt.Function function(Token type, String kind) {
        var name = consume(IDENTIFIER, "Expect " + kind + " name.");
 
        List<Token> parameters = new ArrayList<>();
+        List<Token> parameterTypes = new ArrayList<>();
        if (match(LEFT_PAREN)) {
            if (!check(RIGHT_PAREN)) {
                do {
@@ -331,22 +369,83 @@ public class Parser {
                        throw error(peek(), "Can't have more than 255 parameters.");
                    }
                    parameters.add(consume(IDENTIFIER, "Expect parameter name."));
+                   if (match(COLON)) {
+                       var parameterType = consume(IDENTIFIER, "Expect type.");
+                       parameterTypes.add(parameterType);
+                   }
+                   else {
+                       parameterTypes.add(new Token(IDENTIFIER, "Any", null, previous().line, previous().offset, previous().fileName));
+                   }
                }
                while (match(COMMA));
            }
            consume(RIGHT_PAREN, "Expect ') after parameters.");
        }
+
+       var returnType = "Any";
+       if (match(COLON)) {
+           if ("procedure".equalsIgnoreCase(type.lexeme)) {
+               throw error(peek(), "Procedures cannot have return type.");
+           }
+           var token = consume(IDENTIFIER, "Expected type");
+           returnType = token.lexeme;
+       }
+
        consume(SEMICOLON, "Expect ';'");
        var body = new ArrayList<Stmt>();
-       if (match(TYPE)) {
-           while (!check(BEGIN)) {
-               body.add(typeDeclaration());
+
+       while (isDeclarationSection()) {
+           if (match(TYPE)) {
+               while (!isNextSection()) {
+                   body.add(typeDeclaration());
+               }
+           }
+           else if (match(VAR)) {
+               body.addAll(variableSection());
            }
        }
        consume(BEGIN, "Expect 'begin' before " + kind + " body.");
        body.addAll(block());
 
-       return new Stmt.Function(name, parameters, body);
+       return new Stmt.Function(name, type, returnType, parameters, parameterTypes, body);
+    }
+
+    private boolean isDeclarationSection() {
+       return check(TYPE) || check(VAR);
+    }
+
+    private boolean isNextSection() {
+        return check(BEGIN) || check(TYPE) || check(VAR) || isAtEnd();
+    }
+
+    private List<Stmt> variableSection() {
+        List<Stmt> stmts = new ArrayList<>();
+
+        while (!isNextSection()) {
+            List<Token> names = new ArrayList<>();
+            names.add(consume(IDENTIFIER, "Expect variable name."));
+
+            while (match(COMMA)) {
+                names.add(consume(IDENTIFIER, "Expect variable name."));
+            }
+
+            var type = "Any";
+            if (match(COLON)) {
+                var token = consume(IDENTIFIER, "Expected type.");
+                type = token.lexeme;
+            }
+
+            Expr initializer = null;
+            if (match(ASSIGN)) {
+                initializer = expression();
+            }
+            consume(SEMICOLON, "Expect ';' after variable declaration.");
+
+            for (var name : names) {
+                stmts.add(new Stmt.Var(name, type, initializer));
+            }
+        }
+        return stmts;
     }
 
     private List<Stmt> block() {

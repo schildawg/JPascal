@@ -74,9 +74,12 @@ abstract class Stmt {
     }
 
     static class Function extends Stmt {
-        Function(Token name, List<Token> params, List<Stmt> body) {
+        Function(Token name, Token type, String returnType, List<Token> params, List<Token> types, List<Stmt> body) {
             this.name = name;
+            this.type = type;
+            this.returnType = returnType;
             this.params = params;
+            this.types = types;
             this.body = body;
         }
 
@@ -86,7 +89,10 @@ abstract class Stmt {
         }
 
         final Token name;
+        final Token type;
+        final String returnType;
         final List<Token> params;
+        final List<Token> types;
         final List<Stmt> body;
     }
 
@@ -151,8 +157,9 @@ abstract class Stmt {
     }
 
     static class Var extends Stmt {
-        Var(Token name, Expr initializer) {
+        Var(Token name, String type, Expr initializer) {
             this.name = name;
+            this.type = type;
             this.initializer = initializer;
         }
 
@@ -162,9 +169,9 @@ abstract class Stmt {
         }
 
         final Token name;
+        String type;
         final Expr initializer;
     }
-
 
     abstract <R> R accept(Visitor<R> visitor);
 }

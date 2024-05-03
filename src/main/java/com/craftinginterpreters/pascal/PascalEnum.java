@@ -1,9 +1,9 @@
 package com.craftinginterpreters.pascal;
 
 class PascalEnum {
-    private final String enumName;
-    private final String name;
-    private final int value;
+    public final String enumName;
+    public final String name;
+    public final int value;
 
     public PascalEnum(String enumName, String name, int value) {
         this.enumName = enumName;
