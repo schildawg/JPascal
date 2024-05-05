@@ -1,18 +1,20 @@
-package com.craftinginterpreters.pascal;
+package com.craftinginterpreters.pascal.nativefunction;
+
+import com.craftinginterpreters.pascal.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
-class PascalList extends PascalInstance {
+public class PascalList extends PascalInstance {
     public final List list;
 
-    PascalList() {
+    public PascalList() {
         super(null);
         list = new ArrayList();
     }
 
     @Override
-    protected Object get(Token name) {
+    public Object get(Token name) {
         if (name.lexeme.equalsIgnoreCase("get")) {
             return new PascalCallable() {
                 @Override
@@ -49,7 +51,7 @@ class PascalList extends PascalInstance {
     }
 
     @Override
-    protected void set(Token name, Object value) {
+    public void set(Token name, Object value) {
         throw new RuntimeError(name, "Can't add properties to lists.");
     }
 

@@ -4,20 +4,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-class Environment {
+public class Environment {
     final Environment enclosing;
+    public final Map<String, Object> values = new HashMap<>();
 
-    Environment() {
+    public Environment() {
         enclosing = null;
     }
 
-    Environment(Environment enclosing) {
+    public Environment(Environment enclosing) {
         this.enclosing = enclosing;
     }
 
-    public final Map<String, Object> values = new HashMap<>();
-
-    Object get(Token name) {
+   public Object get(Token name) {
         if (values.containsKey(name.lexeme)) {
             return values.get(name.lexeme);
         }
@@ -26,7 +25,7 @@ class Environment {
         throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
     }
 
-    void define(String name, Object value) {
+   public  void define(String name, Object value) {
         if (values.containsKey(name)) {
             var existing = values.get(name);
             if (existing instanceof PascalFunction && value instanceof PascalFunction) {
@@ -37,7 +36,7 @@ class Environment {
         values.put(name, value);
     }
 
-    Environment ancestor(int distance) {
+    public Environment ancestor(int distance) {
         var environment = this;
         for (int i = 0; i < distance; i++) {
             environment = environment.enclosing;
@@ -46,11 +45,11 @@ class Environment {
         return environment;
     }
 
-    Object getAt(int distance, String name) {
+    public Object getAt(int distance, String name) {
         return ancestor(distance).values.get(name);
     }
 
-    void assign(Token name, Object value) {
+    public void assign(Token name, Object value) {
         if (values.containsKey(name.lexeme)) {
             values.put(name.lexeme, value);
             return;
@@ -62,7 +61,7 @@ class Environment {
         throw new RuntimeError(name, "Undefined variable '" + name.lexeme + "'.");
     }
 
-    void assignAt(int distance, Token name, Object value) {
+    public void assignAt(int distance, Token name, Object value) {
         ancestor(distance).values.put(name.lexeme, value);
     }
 
@@ -72,7 +71,7 @@ class Environment {
             function = get(name);
         } catch (RuntimeError e) {}
 
-        if (function != null && function instanceof PascalFunction fun) {
+        if (function instanceof PascalFunction fun) {
             var matched = fun.match(types);
             if (matched != null) {
                return matched;

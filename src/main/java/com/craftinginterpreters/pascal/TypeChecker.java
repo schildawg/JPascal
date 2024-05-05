@@ -9,7 +9,7 @@ class TypeChecker implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
      private Stmt.Function currentFunction = null;
      private ClassType currentClass = ClassType.NONE;
 
-     private TypeLookup lookup = new TypeLookup();
+     private final TypeLookup lookup = new TypeLookup();
 
     TypeChecker() {
         lookup.inferred = new TypeLookup();
@@ -71,6 +71,8 @@ class TypeChecker implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     public Void visitClassStmt(Stmt.Class stmt) {
         var enclosingClass = currentClass;
         currentClass = ClassType.CLASS;
+        var previousClass = lookup.currentClass;
+        lookup.currentClass = stmt;
 
         if (stmt.superclass != null) {
             currentClass = ClassType.SUBCLASS;
@@ -95,7 +97,7 @@ class TypeChecker implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         lookup.endScope();
 
         if (stmt.superclass != null) lookup.endScope();
-
+        lookup.currentClass = previousClass;
         currentClass = enclosingClass;
         return null;
     }
@@ -181,6 +183,7 @@ class TypeChecker implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         }
 
         if (!type.equalsIgnoreCase(inferred)) {
+            System.out.println(type + " != " + inferred);
             throw new RuntimeError(expr.name, "Type mismatch!");
         }
         return null;

@@ -8,7 +8,7 @@ import java.util.Map;
  * Token to provide console feedback for any compile or runtime errors.
  */
 public class SourceCode {
-    private Map<String, Map<Integer, String>> code = new HashMap<>();
+    private final Map<String, Map<Integer, String>> code = new HashMap<>();
 
     public static final SourceCode INSTANCE = new SourceCode();
 

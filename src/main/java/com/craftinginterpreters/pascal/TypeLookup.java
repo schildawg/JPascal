@@ -9,8 +9,10 @@ import java.util.Stack;
  */
 public class TypeLookup {
     private final Stack<Map<String, String>> scopes = new Stack<>();
-    private final Map<String, String> types = new HashMap<>();
+    public final Map<String, String> types = new HashMap<>();
     public TypeLookup inferred;
+
+    public Stmt.Class currentClass = null;
 
     /**
      * Sets a type in the current scope.

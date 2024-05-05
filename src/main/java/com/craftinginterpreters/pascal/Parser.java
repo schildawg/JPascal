@@ -16,7 +16,6 @@ public class Parser {
 
     private static final Set<String> uses = new HashSet<>();
     private final List<ParseError> errors = new ArrayList<>();
-    private final Map<String, String> types = new HashMap<>();
 
     static class ParseError extends RuntimeException {
         public Token token;
@@ -201,7 +200,6 @@ public class Parser {
         do {
             var param = consume(IDENTIFIER, "Expect enum identifier.");
             parameters.add(param);
-            types.put(param.lexeme, name.lexeme);
         }
         while (match(COMMA));
         consume(RIGHT_PAREN, "Expect ')'");

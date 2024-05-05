@@ -1,6 +1,12 @@
 /// Token
 ///
 class Token;
+var 
+   TypeOfToken : Any;
+   Lexeme      : String;
+   Literal     : Any;
+   LineNumber  : Integer;
+
 begin
     constructor Init(TypeOfToken, Lexeme, Literal, LineNumber);
     begin
@@ -10,7 +16,7 @@ begin
         this.LineNumber := LineNumber;
     end
 
-    function ToString();
+    function ToString() : String;
     begin
        Exit Str(TypeOfToken) +  ' ' + Lexeme + ' ' + Literal;
     end

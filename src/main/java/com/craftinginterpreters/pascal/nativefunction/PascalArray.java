@@ -1,8 +1,10 @@
-package com.craftinginterpreters.pascal;
+package com.craftinginterpreters.pascal.nativefunction;
+
+import com.craftinginterpreters.pascal.*;
 
 import java.util.List;
 
-class PascalArray extends PascalInstance {
+public class PascalArray extends PascalInstance {
     private final Object[] elements;
 
     PascalArray(int size) {
@@ -11,7 +13,7 @@ class PascalArray extends PascalInstance {
     }
 
     @Override
-    protected Object get(Token name) {
+    public Object get(Token name) {
         if (name.lexeme.equals("get")) {
             return new PascalCallable() {
                 @Override
@@ -50,19 +52,19 @@ class PascalArray extends PascalInstance {
     }
 
     @Override
-    protected void set(Token name, Object value) {
+    public void set(Token name, Object value) {
         throw new RuntimeError(name, "Can't add properties to arrays.");
     }
 
     @Override
     public String toString() {
-        StringBuffer buffer = new StringBuffer();
-        buffer.append("[");
+        var sb = new StringBuilder();
+        sb.append("[");
         for (int i = 0; i < elements.length; i++) {
-            if (i != 0) buffer.append(", ");
-            buffer.append(elements[i]);
+            if (i != 0) sb.append(", ");
+            sb.append(elements[i]);
         }
-        buffer.append("]");
-        return buffer.toString();
+        sb.append("]");
+        return sb.toString();
     }
 }

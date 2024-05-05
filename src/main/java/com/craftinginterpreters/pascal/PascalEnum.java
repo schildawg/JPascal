@@ -1,6 +1,6 @@
 package com.craftinginterpreters.pascal;
 
-class PascalEnum {
+public class PascalEnum {
     public final String enumName;
     public final String name;
     public final int value;

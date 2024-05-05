@@ -3,7 +3,7 @@ package com.craftinginterpreters.pascal;
 import java.util.HashMap;
 import java.util.List;
 
-abstract class Expr {
+public abstract class Expr {
     interface Visitor<R> {
         R visitAssignExpr(Assign expr);
         R visitBinaryExpr(Binary expr);
@@ -76,7 +76,7 @@ abstract class Expr {
         }
     }
 
-    static class Call extends Expr {
+    public static class Call extends Expr {
         Call(Expr callee, Token paren, List<Expr> arguments) {
             this.callee = callee;
             this.paren = paren;
@@ -89,7 +89,7 @@ abstract class Expr {
         }
 
         final Expr callee;
-        final Token paren;
+        public final Token paren;
         final List<Expr> arguments;
 
         public String reduce(TypeLookup lookup) {
@@ -105,7 +105,12 @@ abstract class Expr {
                 else if ("Length".equalsIgnoreCase(e.name.lexeme)) {
                     return "Integer";
                 }
+
+                if ("any".equalsIgnoreCase(result)) {
+                    result = lookup.getType(lookup.currentClass.name.lexeme + "::" + e.name.lexeme);
+                }
             }
+
             return result == null ? "Any" : result;
         }
     }
@@ -120,6 +125,14 @@ abstract class Expr {
         @Override
         <R> R accept(Visitor<R> visitor) {
             return visitor.visitSubscriptExpr(this);
+        }
+
+        public String reduce(TypeLookup lookup) {
+            var type = expr.reduce(lookup);
+            if ("string".equalsIgnoreCase(type)) {
+                return "Char";
+            }
+            return "Any";
         }
 
         final Token token;
@@ -361,7 +374,6 @@ abstract class Expr {
     }
 
     abstract <R> R accept(Visitor<R> visitor);
-
     public String reduce(TypeLookup lookup) {
         return "Any";
     }

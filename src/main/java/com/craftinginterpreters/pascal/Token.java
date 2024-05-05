@@ -5,7 +5,7 @@ package com.craftinginterpreters.pascal;
  */
 public class Token {
     final TokenType type;
-    final String lexeme;
+    public final String lexeme;
     final Object literal;
     final int line;
     final int offset;
@@ -21,7 +21,7 @@ public class Token {
      * @param offset offset of the token on the line.
      * @param fileName source file.
      */
-    Token(TokenType type, String lexeme, Object literal, int line, int offset, String fileName) {
+    public Token(TokenType type, String lexeme, Object literal, int line, int offset, String fileName) {
         this.type = type;
         this.lexeme = lexeme;
         this.literal = literal;

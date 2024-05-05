@@ -1,10 +1,12 @@
-package com.craftinginterpreters.pascal;
+package com.craftinginterpreters.pascal.nativefunction;
+
+import com.craftinginterpreters.pascal.*;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-class PascalMap extends PascalInstance {
+public class PascalMap extends PascalInstance {
     public final Map map;
 
     public PascalMap(Map map) {
@@ -17,7 +19,7 @@ class PascalMap extends PascalInstance {
     }
 
     @Override
-    protected Object get(Token name) {
+    public Object get(Token name) {
         if (name.lexeme.equalsIgnoreCase("get")) {
             return new PascalCallable() {
                 @Override
@@ -67,7 +69,7 @@ class PascalMap extends PascalInstance {
     }
 
     @Override
-    protected void set(Token name, Object value) {
+    public void set(Token name, Object value) {
         throw new RuntimeError(name, "Can't add properties to maps.");
     }
 

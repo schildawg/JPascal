@@ -1,5 +1,6 @@
 package com.craftinginterpreters.pascal;
 
+import com.craftinginterpreters.pascal.nativefunction.PascalMap;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;

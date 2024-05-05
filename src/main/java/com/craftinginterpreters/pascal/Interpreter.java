@@ -1,5 +1,7 @@
 package com.craftinginterpreters.pascal;
 
+import com.craftinginterpreters.pascal.nativefunction.*;
+
 import java.util.*;
 
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
@@ -12,147 +14,12 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     Interpreter(ErrorHandler errorHandler) {
         this.errorHandler = errorHandler;
 
-        globals.define("clock", new PascalCallable() {
-            @Override
-            public int arity() {
-                return 0;
-            }
-
-            @Override
-            public Object call(Interpreter interpreter, List<Object> arguments) {
-                return (double) System.currentTimeMillis() / 1000.00;
-            }
-
-            @Override
-            public String toString() {
-                return "<native fn>";
-            }
-        });
-
-        globals.define("Array", new PascalCallable() {
-            @Override
-            public int arity() {
-                return 1;
-            }
-
-            @Override
-            public Object call(Interpreter interpreter, List<Object> arguments) {
-                int size = (int) arguments.get(0);
-                return new PascalArray(size);
-            }
-        });
-
-        globals.define("List", new PascalCallable() {
-            @Override
-            public int arity() {
-                return 0;
-            }
-
-            @Override
-            public Object call(Interpreter interpreter, List<Object> arguments) {
-                return new PascalList();
-            }
-        });
-
-        globals.define("Map", new PascalCallable() {
-            @Override
-            public int arity() {
-                return 0;
-            }
-
-            @Override
-            public Object call(Interpreter interpreter, List<Object> arguments) {
-                return new PascalMap();
-            }
-        });
-
-        globals.define("Length", new PascalCallable() {
-            @Override
-            public int arity() {
-                return 1;
-            }
-
-            @Override
-            public Object call(Interpreter interpreter, List<Object> arguments) {
-                var s = String.valueOf(arguments.get(0));
-                return s.length();
-            }
-        });
-
-        globals.define("Copy", new PascalCallable() {
-            @Override
-            public int arity() {
-                return 3;
-            }
-
-            @Override
-            public Object call(Interpreter interpreter, List<Object> arguments) {
-                var s = (String) arguments.get(0);
-                var begin = (int) arguments.get(1);
-                var end = (int) arguments.get(2);
-
-                return s.substring(begin, end);
-            }
-        });
-
-        globals.define("Write", new PascalCallable() {
-            @Override
-            public int arity() {
-                return 1;
-            }
-
-            @Override
-            public Object call(Interpreter interpreter, List<Object> arguments) {
-                var s = arguments.get(0);
-
-                System.out.print(s.toString());
-                return null;
-            }
-        });
-
-        globals.define("Debug", new PascalCallable() {
-            @Override
-            public int arity() {
-                return 2;
-            }
-
-            @Override
-            public Object call(Interpreter interpreter, List<Object> arguments) {
-                var fun = arguments.get(0);
-                var klass = arguments.get(1);
-                Console.debug(fun + ": " + klass.getClass().getName());
-                return null;
-            }
-        });
-
-        globals.define("Str", new PascalCallable() {
-            @Override
-            public int arity() {
-                return 1;
-            }
-
-            @Override
-            public Object call(Interpreter interpreter, List<Object> arguments) {
-                var arg = arguments.get(0);
-                return arg == null ? "nil" : arg.toString();
-            }
-        });
-
-        globals.define("WriteLn", new PascalCallable() {
-            @Override
-            public int arity() {
-                return 1;
-            }
-
-            @Override
-            public Object call(Interpreter interpreter, List<Object> arguments) {
-                var s = arguments.get(0);
-
-                System.out.println(stringify(s));
-                return null;
-            }
-        });
-
+        try {
+           NativeFunctionInvoker.register(globals, NativeFunctions.class);
+        }
+        catch (NoSuchMethodException e) {
+            throw new RuntimeException("Error registering native functions");
+        }
     }
 
     Interpreter() {
@@ -172,39 +39,12 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     void runTests(List<Stmt> statements) {
-         globals.define("AssertTrue", new Assertion() {
-            @Override
-            public int arity() {
-                return 1;
-            }
-
-            @Override
-            public Object call(Interpreter interpreter, List<Object> arguments) {
-                var call = (Expr.Call) arguments.get(0);
-
-                if (!isTruthy(arguments.get(1))) {
-                    throw new RuntimeError(call.paren, "Assertion 'left = right' failed.");
-                }
-                return true;
-            }
-        });
-
-        globals.define("AssertEqual", new Assertion() {
-            @Override
-            public int arity() {
-                return 2;
-            }
-
-            @Override
-            public Object call(Interpreter interpreter, List<Object> arguments) {
-                var call = (Expr.Call) arguments.get(0);
-
-                if (!isEqual(arguments.get(1), arguments.get(2))) {
-                    throw new RuntimeError(call.paren, "Assertion 'left = right' failed.  Expected '" + arguments.get(1) + "' but got '" + arguments.get(2) + "'.");
-                }
-                return true;
-            }
-        });
+        try {
+            AssertionInvoker.register(globals, Assertions.class);
+        }
+        catch (NoSuchMethodException e) {
+            throw new RuntimeException("Error registering assertions.");
+        }
 
         try {
             Map<String, Set<Stmt.Function>> tests = new HashMap<>();
@@ -488,10 +328,6 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             }
         }
 
-        if (arguments.size() != function.arity()) {
-            throw new RuntimeError(expr.paren, "Expected " + function.arity() + " arguments but got " + arguments.size() + ".");
-        }
-
         if (function instanceof Assertion) {
             var newArgs = new ArrayList<>();
             newArgs.add(expr);
@@ -499,6 +335,10 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             return function.call(this, newArgs);
         }
         else {
+            if (arguments.size() != function.arity()) {
+                throw new RuntimeError(expr.paren, "Expected " + function.arity() + " arguments but got " + arguments.size() + ".");
+            }
+
             return function.call(this, arguments);
         }
     }
@@ -779,17 +619,9 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     public Void visitFunctionStmt(Stmt.Function stmt) {
         var function = new PascalFunction(stmt, environment, false);
 
-        List<String> args = new ArrayList<>();
-        for (var type : stmt.types) {
-            args.add(type.lexeme);
-        }
         if (environment.values.containsKey(stmt.name.lexeme)) {
             var value = environment.values.get(stmt.name.lexeme);
-//            if (value instanceof PascalFunction fun) {
-//                System.out.println("ADDING OVERLOAD");
-//                fun.overloads.add(function);
-//                return null;
-//            }
+
             throw new RuntimeError(stmt.name, "Variable already exists!" + value.getClass());
         }
         environment.define(stmt.name.lexeme, function);
@@ -841,6 +673,4 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         environment.define(stmt.name.lexeme, value);
         return null;
     }
-
-    private static interface Assertion extends PascalCallable {}
 }
