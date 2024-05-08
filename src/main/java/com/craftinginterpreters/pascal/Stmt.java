@@ -1,6 +1,8 @@
 package com.craftinginterpreters.pascal;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 abstract class Stmt {
     interface Visitor<R> {
@@ -10,8 +12,10 @@ abstract class Stmt {
         R visitExpressionStmt(Expression stmt);
         R visitFunctionStmt(Function stmt);
         R visitIfStmt(If stmt);
+        R visitTryStmt(Try stmt);
         R visitPrintStmt(Print stmt);
         R visitReturnStmt(Return stmt);
+        R visitRaiseStmt(Raise stmt);
         R visitWhileStmt(While stmt);
         R visitVarStmt(Var stmt);
     }
@@ -115,6 +119,32 @@ abstract class Stmt {
         Stmt elseBranch;
     }
 
+    static class Try extends Stmt {
+        Try(Stmt tryBlock, Map<String, Except> exceptMap) {
+            this.tryBlock = tryBlock;
+            this.exceptMap = exceptMap;
+        }
+
+        @Override
+        <R> R accept(Visitor<R> visitor) {
+            return visitor.visitTryStmt(this);
+        }
+
+        final Stmt tryBlock;
+
+        final Map<String, Except> exceptMap;
+    }
+
+    static class Except {
+        Except(String name, Stmt stmt) {
+            this.name = name;
+            this.stmt = stmt;
+        }
+
+        final String name;
+        final Stmt stmt;
+    }
+
     static class Print extends Stmt {
         Print(Expr expression) {
             this.expression = expression;
@@ -137,6 +167,21 @@ abstract class Stmt {
         @Override
         <R> R accept(Visitor<R> visitor) {
             return visitor.visitReturnStmt(this);
+        }
+
+        final Token keyword;
+        final Expr value;
+    }
+
+    static class Raise extends Stmt {
+        Raise(Token keyword, Expr value) {
+            this.keyword = keyword;
+            this.value = value;
+        }
+
+        @Override
+        <R> R accept(Visitor<R> visitor) {
+            return visitor.visitRaiseStmt(this);
         }
 
         final Token keyword;

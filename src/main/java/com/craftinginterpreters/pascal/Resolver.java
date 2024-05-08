@@ -119,6 +119,18 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Void visitTryStmt(Stmt.Try stmt) {
+        resolve(stmt.tryBlock);
+
+        for (var except : stmt.exceptMap.values())
+        {
+            resolve(except.stmt);
+        }
+
+        return null;
+    }
+
+    @Override
     public Void visitPrintStmt(Stmt.Print stmt) {
         resolve(stmt.expression);
         return null;
@@ -137,6 +149,11 @@ class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             }
             resolve(stmt.value);
         }
+        return null;
+    }
+
+    @Override
+    public Void visitRaiseStmt(Stmt.Raise stmt) {
         return null;
     }
 

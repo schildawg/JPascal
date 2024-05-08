@@ -51,6 +51,11 @@ public class Scanner {
         keywords.put("function",    FUNCTION);
         keywords.put("procedure",   PROCEDURE);
 
+        keywords.put("try",     TRY);
+        keywords.put("except",  EXCEPT);
+        keywords.put("finally", FINALLY);
+        keywords.put("raise",   RAISE);
+
         keywords.put("unit",  UNIT);
         keywords.put("uses",  USES);
         keywords.put("const", CONST);

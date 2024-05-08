@@ -211,9 +211,11 @@ public class Parser {
     private Stmt statement() {
         if (match(FOR)) return forStatement();
         if (match(IF)) return ifStatement();
+        if (match(TRY)) return tryStatement();
         if (match(CASE)) return caseStatement();
         if (match(PRINT)) return printStatement();
         if (match(EXIT)) return exitStatement();
+        if (match(RAISE)) return raiseStatement();
         if (match(WHILE)) return whileStatement();
         if (match(BEGIN)) return new Stmt.Block(block());
 
@@ -271,6 +273,39 @@ public class Parser {
         return new Stmt.If(condition, thenBranch, elseBranch);
     }
 
+    private Stmt tryStatement() {
+        List<Stmt> stmts = new ArrayList<>();
+        while (!check(EXCEPT) && !isAtEnd()) {
+            stmts.add(statement());
+        }
+        var tryBlock = new Stmt.Block(stmts);
+
+        Map<String, Stmt.Except> exceptMap = new HashMap<>();
+
+        consume(EXCEPT, "Expect 'except' after try block.");
+        while (check(IDENTIFIER, "on")) {
+            consume(IDENTIFIER, "Expected 'on'");
+
+            var variable = consume(IDENTIFIER, "Expected variable name.");
+            String type = null;
+            if (match(COLON)) {
+                type = consume(IDENTIFIER, "Expected type.").lexeme;
+            }
+            consume(DO, "Expected 'do'.");
+            var stmt = statement();
+            exceptMap.put(type, new Stmt.Except(variable.lexeme, stmt));
+        }
+
+        List<Stmt> exceptStmts = new ArrayList<>();
+        while (!check(END) && !isAtEnd()) {
+            exceptStmts.add(statement());
+        }
+        var exceptBlock = new Stmt.Block(exceptStmts);
+        exceptMap.put("default", new Stmt.Except("Any", exceptBlock));
+        consume(END, "Expect 'end' after except block.");
+        return new Stmt.Try(tryBlock, exceptMap);
+    }
+
     private Stmt caseStatement() {
         var left = expression();
         consume(OF, "Expect 'of' after case condition.");
@@ -326,6 +361,17 @@ public class Parser {
 
         consume(SEMICOLON, "Expect ';' after exit value.");
         return new Stmt.Return(keyword, value);
+    }
+
+    private Stmt raiseStatement() {
+        var keyword = previous();
+        Expr value = null;
+        if (!check(SEMICOLON)) {
+            value = expression();
+        }
+
+        consume(SEMICOLON, "Expect ';' after exit value.");
+        return new Stmt.Raise(keyword, value);
     }
 
     private Stmt varDeclaration() {

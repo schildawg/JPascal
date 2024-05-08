@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-
 import static org.junit.jupiter.api.Assertions.*;
 
 public class InterpreterTest {
@@ -2105,4 +2104,142 @@ public class InterpreterTest {
     }
 
 
+    // Tests Raise.
+    //
+    @Test
+    void testRaise() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var ex = assertThrows(RuntimeError.class, () -> {
+            var stmts = parseStmts("raise 'Error!';");
+
+            var resolver = new Resolver(interpreter);
+            resolver.resolve(stmts);
+
+            interpreter.interpret(stmts);
+        });
+        assertEquals("Error!", ex.getMessage());
+    }
+
+    // Tests try/except.
+    //
+    @Test
+    void testTryExcept() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var stmts = parseStmts("""
+            var Abc := False;
+            try
+               raise 'Hello';
+            except
+               on e : String do Abc := True;
+            end
+            """);
+
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
+
+        interpreter.interpret(stmts);
+
+        var result =  interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0, 0, "test"));
+
+        assertEquals(true, result);
+    }
+
+    // Tests try/except.
+    //
+    @Test
+    void testTryExceptNoThrow() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var stmts = parseStmts("""
+            var Abc := False;
+            try
+               WriteLn ('Test');
+            except
+               Abc := True;
+            end
+            """);
+
+        var resolver = new Resolver(interpreter);
+        resolver.resolve(stmts);
+
+        interpreter.interpret(stmts);
+
+        var result =  interpreter.globals.get(new Token(TokenType.IDENTIFIER, "Abc", "", 0, 0, "test"));
+
+        assertEquals(false, result);
+    }
+
+    // Tests try missing variable name.
+    //
+    @Test
+    void testTryExpectVariableName() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var ex = assertThrows(Parser.ParseError.class, () -> {
+            var stmts = parseStmts("""
+            var Abc := False;
+            try
+               WriteLn ('Test');
+            except
+               on 1 do
+            end
+            """);
+
+            var resolver = new Resolver(interpreter);
+            resolver.resolve(stmts);
+
+            interpreter.interpret(stmts);
+        });
+        assertEquals("Expected variable name.", ex.getMessage());
+    }
+
+    // Tests try missing variable type.
+    //
+    @Test
+    void testTryExpectVariableType() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var ex = assertThrows(Parser.ParseError.class, () -> {
+            var stmts = parseStmts("""
+            var Abc := False;
+            try
+               WriteLn ('Test');
+            except
+               on e : do
+            end
+            """);
+
+            var resolver = new Resolver(interpreter);
+            resolver.resolve(stmts);
+
+            interpreter.interpret(stmts);
+        });
+        assertEquals("Expected type.", ex.getMessage());
+    }
+
+    // Tests try missing do
+    //
+    @Test
+    void testTryMissingDo() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var ex = assertThrows(Parser.ParseError.class, () -> {
+            var stmts = parseStmts("""
+            var Abc := False;
+            try
+               WriteLn ('Test');
+            except
+               on e : String WriteLn('Abc');
+            end
+            """);
+
+            var resolver = new Resolver(interpreter);
+            resolver.resolve(stmts);
+
+            interpreter.interpret(stmts);
+        });
+        assertEquals("Expected 'do'.", ex.getMessage());
+    }
 }

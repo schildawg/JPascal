@@ -18,6 +18,8 @@ public enum TokenType {
 
     CONSTRUCTOR, FUNCTION, PROCEDURE,
 
+    TRY, EXCEPT, FINALLY, RAISE,
+
     CASE, OF,
 
     BEGIN, END,

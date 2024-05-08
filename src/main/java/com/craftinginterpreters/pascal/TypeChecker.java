@@ -145,6 +145,17 @@ class TypeChecker implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Void visitRaiseStmt(Stmt.Raise stmt) {
+        return null;
+    }
+
+    @Override
+    public Void visitTryStmt(Stmt.Try stmt) {
+        // TODO: Add logic
+        return null;
+    }
+
+    @Override
     public Void visitVarStmt(Stmt.Var stmt) {
         if (stmt.initializer != null) {
             var type = stmt.initializer.reduce(lookup);

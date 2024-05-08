@@ -21,6 +21,12 @@ public class NativeFunctions {
         return obj == null ? "nil" : obj.toString();
     }
 
+    /// Converts a value to its string representation.
+    ///
+    public static Double Ord(Object obj) {
+        return obj == null ? -1 : Double.parseDouble(obj.toString());
+    }
+
     /// Writes a class type to Debug console.
     ///
     public static void Debug(String fun, Object clazz) {

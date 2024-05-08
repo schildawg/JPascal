@@ -277,7 +277,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         }
 
         if (obj instanceof PascalInstance e) {
-            return e.klass.name;
+            if (e.klass != null) return e.klass.name;
         }
         return "Any";
     }
@@ -332,6 +332,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             var newArgs = new ArrayList<>();
             newArgs.add(expr);
             newArgs.addAll(arguments);
+
             return function.call(this, newArgs);
         }
         else {
@@ -479,7 +480,12 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             return environment.getAt(distance, name.lexeme);
         }
         else {
-            return globals.get(name);
+            try {
+                return environment.get(name);
+            }
+            catch (Exception e) {
+                return globals.get(name);
+            }
         }
     }
 
@@ -603,7 +609,13 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         }
         else if (target instanceof PascalList list) {
             int index = Integer.parseInt(evaluate(expr.index).toString());
-            return list.list.get(index);
+
+            try {
+                return list.list.get(index);
+            }
+            catch (RuntimeException e) {
+                throw new RuntimeError(expr.token, e.getMessage());
+            }
         }
 
         throw new RuntimeError(expr.token, "Subscript target should be an ordinal.");
@@ -641,6 +653,22 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Void visitTryStmt(Stmt.Try stmt) {
+        try {
+            execute(stmt.tryBlock);
+        }
+        catch (RuntimeError e) {
+            // FIXME
+            var ex = e.getMessage();
+
+            var except = stmt.exceptMap.get(ex.getClass().getSimpleName());
+            environment.define(except.name, ex);
+            execute(except.stmt) ;
+        }
+        return null;
+    }
+
+    @Override
     public Void visitPrintStmt(Stmt.Print stmt) {
         Object value = evaluate(stmt.expression);
         System.out.println(stringify(value));
@@ -654,6 +682,14 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         if (stmt.value != null) value = evaluate(stmt.value);
 
         throw new Return(value);
+    }
+
+    @Override
+    public Void visitRaiseStmt(Stmt.Raise stmt) {
+        Object value = null;
+        if (stmt.value != null) value = evaluate(stmt.value);
+
+        throw new RuntimeError(stmt.keyword, value.toString());
     }
 
     @Override

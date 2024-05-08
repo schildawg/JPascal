@@ -202,7 +202,7 @@ public abstract class Expr {
             map.put(Character.class, "Char");
             map.put(Double.class, "Double");
 
-            if (map.containsKey(value.getClass()))  {
+            if (value != null && map.containsKey(value.getClass()))  {
                 return map.get(value.getClass());
             }
 

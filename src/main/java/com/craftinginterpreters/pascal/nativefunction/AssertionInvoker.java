@@ -2,6 +2,7 @@ package com.craftinginterpreters.pascal.nativefunction;
 
 import com.craftinginterpreters.pascal.Environment;
 import com.craftinginterpreters.pascal.Interpreter;
+import com.craftinginterpreters.pascal.RuntimeError;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -34,8 +35,9 @@ public class AssertionInvoker implements Assertion {
             return method.invoke(null, arguments.toArray());
         }
         catch (IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(e);
+            throw (RuntimeError)e.getCause();
         }
+
     }
 
     public static void register(Environment globals, Class clazz) throws NoSuchMethodException {
