@@ -596,4 +596,65 @@ public class TypeCheckerTest {
 
         interpreter.interpret(stmts);
     }
+
+    // Subscript should throw a type mismatch if not using generics
+    //
+    @Test
+    void testSubscriptNoGeneric() {
+        var stmts = parseStmts("""
+           var Tokens : List := List();
+           Tokens.Add('ABC');
+
+           var Token : String := Tokens[0];
+           """);
+
+        var ex = assertThrows(RuntimeError.class, () -> {
+            var checker = new TypeChecker();
+            checker.resolve(stmts);
+        });
+        assertEquals("Type mismatch!", ex.getMessage());
+    }
+
+    // Subscript should return generic type of List
+    //
+    @Test
+    void testSubscriptWithGeneric() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var stmts = parseStmts("""
+           var Tokens : List of String := List();
+           Tokens.Add('ABC');
+
+           var Token : String := Tokens[0];
+           """);
+
+        var checker = new TypeChecker();
+        checker.resolve(stmts);
+
+        interpreter.interpret(stmts);
+    }
+
+    // Subscript should return generic type of List
+    //
+    @Test
+    void testAssignSubclass() {
+        var interpreter = new Interpreter(new TestErrorHandler());
+
+        var stmts = parseStmts("""
+           class Animal;
+           begin
+           end
+           
+           class Dog (Animal);
+           begin
+           end
+           
+           var Pet : Animal := Dog();
+           """);
+
+        var checker = new TypeChecker();
+        checker.resolve(stmts);
+
+        interpreter.interpret(stmts);
+    }
 }

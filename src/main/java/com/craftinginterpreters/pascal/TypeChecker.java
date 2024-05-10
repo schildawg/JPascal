@@ -13,6 +13,8 @@ class TypeChecker implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     TypeChecker() {
         lookup.inferred = new TypeLookup();
+        lookup.parents = new TypeLookup();
+        lookup.generics = new TypeLookup();
     }
 
     private enum ClassType {
@@ -44,13 +46,20 @@ class TypeChecker implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             lookup.setType(e.name.lexeme, e.returnType);
         }
         else if (stmt instanceof Stmt.Class e) {
+            lookup.parents.setType(e.name.lexeme, ((e.superclass == null) ? "Any" : e.superclass.name.lexeme));
             lookup.setType(e.name.lexeme, e.name.lexeme);
             for (var fun : e.methods) {
                 lookup.setType(e.name.lexeme + "::" + fun.name.lexeme, fun.returnType);
             }
+            for (var expr : e.initializers) {
+                if (expr instanceof Expr.ClassVar v) {
+                    lookup.generics.setType(v.name.lexeme, v.generic);
+                }
+            }
         }
         else if (stmt instanceof Stmt.Var e) {
             lookup.setType(e.name.lexeme, e.type);
+            lookup.generics.setType(e.name.lexeme, e.generic);
         }
     }
 
@@ -138,10 +147,19 @@ class TypeChecker implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
         if ("any".equalsIgnoreCase(returnType)) return null;
 
-        if (!exitType.equalsIgnoreCase(returnType)) {
-            throw new RuntimeError(stmt.keyword, "Type mismatch!");
+        if (exitType.equalsIgnoreCase(returnType)) {
+            return null;
         }
-        return null;
+
+        var parent = lookup.parents.getType(exitType);
+        while (parent != null) {
+            if (returnType.equalsIgnoreCase(parent)) {
+                return null;
+            }
+            parent = lookup.parents.getType(parent);
+        }
+
+        throw new RuntimeError(stmt.keyword, "Type mismatch!");
     }
 
     @Override
@@ -161,10 +179,22 @@ class TypeChecker implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             var type = stmt.initializer.reduce(lookup);
             if ("any".equalsIgnoreCase(stmt.type)) {
                 lookup.inferred.setType(stmt.name.lexeme,  type);
+                return null;
             }
-            else if (!stmt.type.equals(type)) {
-                throw new RuntimeError(stmt.name, "Type mismatch!");
+
+            lookup.setType(stmt.name.lexeme, stmt.type);
+            if (stmt.type.equalsIgnoreCase(type)) {
+                return null;
             }
+
+            var parent = lookup.parents.getType(type);
+            while (parent != null) {
+                if (stmt.type.equalsIgnoreCase(parent)) {
+                    return null;
+                }
+                parent = lookup.parents.getType(parent);
+            }
+            throw new RuntimeError(stmt.name, "Type mismatch!");
         }
         return null;
     }
@@ -193,11 +223,21 @@ class TypeChecker implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             return null;
         }
 
-        if (!type.equalsIgnoreCase(inferred)) {
-            System.out.println(type + " != " + inferred);
-            throw new RuntimeError(expr.name, "Type mismatch!");
+
+        if (type.equalsIgnoreCase(inferred)) {
+            return null;
         }
-        return null;
+
+        var parent = lookup.parents.getType(inferred);
+        while (parent != null) {
+            if (type.equalsIgnoreCase(parent)) {
+                return null;
+            }
+            parent = lookup.parents.getType(parent);
+        }
+
+        System.out.println(type + " != " + inferred);
+        throw new RuntimeError(expr.name, "Type mismatch!");
     }
 
     @Override

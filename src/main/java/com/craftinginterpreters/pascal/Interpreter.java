@@ -72,6 +72,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
             Console.info("Running " + count + " tests...");
             for (var key : tests.keySet()) {
+                if ("REPL".equals(key)) continue;
                 Console.subheader(key);
 
                 var set = tests.get(key);
@@ -313,6 +314,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                     function = ((PascalFunction)function).bind(parent);
                 }
             }
+
 
             // walk up environments...
             if (function == null ) {

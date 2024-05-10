@@ -106,7 +106,7 @@ public abstract class Expr {
                     return "Integer";
                 }
 
-                if ("any".equalsIgnoreCase(result)) {
+                if ("any".equalsIgnoreCase(result) && lookup.currentClass != null) {
                     result = lookup.getType(lookup.currentClass.name.lexeme + "::" + e.name.lexeme);
                 }
             }
@@ -131,6 +131,12 @@ public abstract class Expr {
             var type = expr.reduce(lookup);
             if ("string".equalsIgnoreCase(type)) {
                 return "Char";
+            }
+
+            if (expr instanceof Expr.Variable e && lookup.generics != null)  {
+
+                var generic = lookup.generics.getType(e.name.lexeme);
+                if (generic != null) return generic;
             }
             return "Any";
         }
@@ -308,10 +314,11 @@ public abstract class Expr {
     }
 
     static class ClassVar extends Expr {
-        ClassVar(Expr object, Token name, String type, Expr value) {
+        ClassVar(Expr object, Token name, String type, String generic, Expr value) {
             this.object = object;
             this.name = name;
             this.type = type;
+            this.generic = generic;
             this.value = value;
         }
 
@@ -323,6 +330,7 @@ public abstract class Expr {
         final Expr object;
         final Token name;
         final String type;
+        final String generic;
         final Expr value;
     }
 

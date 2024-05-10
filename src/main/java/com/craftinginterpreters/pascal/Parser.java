@@ -171,7 +171,7 @@ public class Parser {
                        if (type == null) {
                            type = "Any";
                        }
-                       initializers.add(new Expr.ClassVar(new Expr.This(v.name), v.name, type, new Expr.Variable(v.name)));
+                       initializers.add(new Expr.ClassVar(new Expr.This(v.name), v.name, type, v.generic, new Expr.Variable(v.name)));
                    }
                }
            }
@@ -376,11 +376,16 @@ public class Parser {
 
     private Stmt varDeclaration() {
         var name = consume(IDENTIFIER, "Expect variable name.");
-
+        var generic = "Any";
         var type = "Any";
         if (match(COLON)) {
             var token = consume(IDENTIFIER, "Expected type.");
             type = token.lexeme;
+            if ("list".equalsIgnoreCase(type)) {
+                if (match(OF)) {
+                    generic = consume(IDENTIFIER, "Expect generic type.").lexeme;
+                }
+            }
         }
 
         Expr initializer = null;
@@ -390,7 +395,7 @@ public class Parser {
 
         consume(SEMICOLON, "Expect ';' after variable declaration.");
 
-        return new Stmt.Var(name, type, initializer);
+        return new Stmt.Var(name, type, generic, initializer);
     }
 
     private Stmt whileStatement() {
@@ -483,9 +488,15 @@ public class Parser {
             }
 
             var type = "Any";
+            var generic = "Any";
             if (match(COLON)) {
                 var token = consume(IDENTIFIER, "Expected type.");
                 type = token.lexeme;
+                if ("list".equalsIgnoreCase(type)) {
+                    if (match(OF)) {
+                        generic = consume(IDENTIFIER, "Expect generic type.").lexeme;
+                    }
+                }
             }
 
             Expr initializer = null;
@@ -495,7 +506,7 @@ public class Parser {
             consume(SEMICOLON, "Expect ';' after variable declaration.");
 
             for (var name : names) {
-                stmts.add(new Stmt.Var(name, type, initializer));
+                stmts.add(new Stmt.Var(name, type, generic, initializer));
             }
         }
 

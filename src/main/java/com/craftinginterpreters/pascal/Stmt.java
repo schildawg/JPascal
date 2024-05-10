@@ -204,9 +204,11 @@ abstract class Stmt {
     }
 
     static class Var extends Stmt {
-        Var(Token name, String type, Expr initializer) {
+        Var(Token name, String type, String generic, Expr initializer) {
             this.name = name;
             this.type = type;
+            this.generic = generic;
+
             this.initializer = initializer;
         }
 
@@ -217,6 +219,7 @@ abstract class Stmt {
 
         final Token name;
         String type;
+        String generic;
         final Expr initializer;
     }
 

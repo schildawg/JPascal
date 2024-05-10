@@ -10,7 +10,10 @@ import java.util.Stack;
 public class TypeLookup {
     private final Stack<Map<String, String>> scopes = new Stack<>();
     public final Map<String, String> types = new HashMap<>();
+
     public TypeLookup inferred;
+    public TypeLookup parents;
+    public TypeLookup generics;
 
     public Stmt.Class currentClass = null;
 
@@ -46,6 +49,9 @@ public class TypeLookup {
      */
     public void beginScope() {
         scopes.push(new HashMap<>());
+        if (inferred != null) inferred.beginScope();
+        if (parents != null) parents.beginScope();
+        if (generics != null) generics.beginScope();
     }
 
     /**
@@ -53,5 +59,8 @@ public class TypeLookup {
      */
     public void endScope() {
         scopes.pop();
+        if (inferred != null) inferred.endScope();
+        if (parents != null) parents.endScope();
+        if (generics != null) generics.endScope();
     }
 }
