@@ -22,6 +22,8 @@ public enum TokenType {
 
     CASE, OF,
 
+    BREAK,
+
     BEGIN, END,
 
     EOF

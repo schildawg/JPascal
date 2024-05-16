@@ -56,6 +56,8 @@ public class Scanner {
         keywords.put("finally", FINALLY);
         keywords.put("raise",   RAISE);
 
+        keywords.put("break",   BREAK);
+
         keywords.put("unit",  UNIT);
         keywords.put("uses",  USES);
         keywords.put("const", CONST);

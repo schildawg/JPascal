@@ -11,6 +11,8 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     private final ErrorHandler errorHandler;
 
+    private static class BreakException extends RuntimeException {}
+
     Interpreter(ErrorHandler errorHandler) {
         this.errorHandler = errorHandler;
 
@@ -311,10 +313,11 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                 var parent = fun.getParent();
                 if (parent != null) {
                     function = parent.klass.findMethod(fun.declaration.name.lexeme, types);
-                    function = ((PascalFunction)function).bind(parent);
+                    if (function != null) {
+                        function = ((PascalFunction)function).bind(parent);
+                    }
                 }
             }
-
 
             // walk up environments...
             if (function == null ) {
@@ -662,9 +665,26 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         catch (RuntimeError e) {
             // FIXME
             var ex = e.getMessage();
+            Object value = e.value;
+            if (value == null) {
+                value = ex;
+            }
 
-            var except = stmt.exceptMap.get(ex.getClass().getSimpleName());
-            environment.define(except.name, ex);
+            String name;
+            if (value instanceof PascalInstance pi) {
+                name = pi.klass.name;
+            }
+            else {
+                name = value.getClass().getSimpleName();
+            }
+            var except = stmt.exceptMap.get(name);
+            if (except == null) {
+                except = stmt.exceptMap.get("default");
+            }
+            if (except == null) {
+                stmt.exceptMap.get("default");
+            }
+            environment.define(except.name, value);
             execute(except.stmt) ;
         }
         return null;
@@ -687,17 +707,30 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     @Override
+    public Void visitBreakStmt(Stmt.Break stmt) {
+        throw new BreakException();
+    }
+
+    @Override
     public Void visitRaiseStmt(Stmt.Raise stmt) {
         Object value = null;
         if (stmt.value != null) value = evaluate(stmt.value);
 
-        throw new RuntimeError(stmt.keyword, value.toString());
+        var ex = new RuntimeError(stmt.keyword, value.toString());
+        ex.value = value;
+
+        throw ex;
     }
 
     @Override
     public Void visitWhileStmt(Stmt.While stmt) {
-        while (isTruthy(evaluate(stmt.condition))) {
-            execute(stmt.body);
+        try {
+            while (isTruthy(evaluate(stmt.condition))) {
+                execute(stmt.body);
+            }
+        }
+        catch (BreakException ex) {
+            // Do nothing.
         }
         return null;
     }

@@ -18,6 +18,7 @@ abstract class Stmt {
         R visitRaiseStmt(Raise stmt);
         R visitWhileStmt(While stmt);
         R visitVarStmt(Var stmt);
+        R visitBreakStmt(Break stmt);
     }
     static class Block extends Stmt {
         Block(List<Stmt> statements) {
@@ -221,6 +222,13 @@ abstract class Stmt {
         String type;
         String generic;
         final Expr initializer;
+    }
+
+    static class Break extends Stmt {
+        @Override
+        <R> R accept(Visitor<R> visitor) {
+            return visitor.visitBreakStmt(this);
+        }
     }
 
     abstract <R> R accept(Visitor<R> visitor);

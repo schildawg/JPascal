@@ -13,6 +13,7 @@ import static com.craftinginterpreters.pascal.TokenType.*;
 public class Parser {
     private static final boolean DEBUG = false;
     private final boolean synchronize;
+    private int loopDepth = 0;
 
     private static final Set<String> uses = new HashSet<>();
     private final List<ParseError> errors = new ArrayList<>();
@@ -210,6 +211,7 @@ public class Parser {
 
     private Stmt statement() {
         if (match(FOR)) return forStatement();
+        if (match(BREAK)) return breakStatement();
         if (match(IF)) return ifStatement();
         if (match(TRY)) return tryStatement();
         if (match(CASE)) return caseStatement();
@@ -245,19 +247,34 @@ public class Parser {
             increment = expression();
         }
         consume(DO, "Expect 'do' after for clauses.");
-        Stmt body = statement();
 
-        if (increment != null) {
-            body = new Stmt.Block(Arrays.asList(body, new Stmt.Expression(increment)));
+        try {
+            loopDepth++;
+            var body = statement();
+
+            if (increment != null) {
+                body = new Stmt.Block(Arrays.asList(body, new Stmt.Expression(increment)));
+            }
+
+            if (condition == null) condition = new Expr.Literal(true);
+            body = new Stmt.While(condition, body);
+
+            if (initializer != null) {
+                body = new Stmt.Block(Arrays.asList(initializer, body));
+            }
+            return body;
         }
-
-        if (condition == null) condition = new Expr.Literal(true);
-        body = new Stmt.While(condition, body);
-
-        if (initializer != null) {
-            body = new Stmt.Block(Arrays.asList(initializer, body));
+        finally {
+            loopDepth--;
         }
-        return body;
+    }
+
+    private Stmt breakStatement() {
+        if (loopDepth == 0) {
+            error(previous(), "Must be inside a loop to use 'break'.");
+        }
+        consume(SEMICOLON, "Expect ';' after 'break'.");
+        return new Stmt.Break();
     }
 
     private Stmt ifStatement() {
@@ -402,9 +419,15 @@ public class Parser {
         var condition = expression();
         consume(DO, "Expect 'do' after condition.");
 
-        Stmt body = statement();
+        try {
+            loopDepth++;
+            var body = statement();
 
-        return new Stmt.While(condition, body);
+            return new Stmt.While(condition, body);
+        }
+        finally {
+            loopDepth--;
+        }
     }
 
     private Stmt expressionStatement() {

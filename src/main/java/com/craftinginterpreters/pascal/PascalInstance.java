@@ -21,6 +21,9 @@ public class PascalInstance {
     }
 
     protected Object get(Token name) {
+        if (name.lexeme.equalsIgnoreCase("classname")) {
+            return klass.name;
+        }
         if (fields.containsKey(name.lexeme)) {
             return fields.get(name.lexeme);
         }
