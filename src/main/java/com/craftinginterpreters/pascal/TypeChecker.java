@@ -312,6 +312,7 @@ class TypeChecker implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
         if (expected == null || "any".equalsIgnoreCase(expected)) return null;
         if (!expected.equalsIgnoreCase(inferred)) {
+            System.out.println(expected + " != " + inferred);
             throw new RuntimeError(expr.name, "Type mismatch.");
         }
         return null;

@@ -40,7 +40,7 @@ public class PascalMapTest {
         var result = contains.call(null, args);
         assertEquals(true, result);
 
-        assertEquals("<map>", uut.toString());
+        assertEquals("{1=ABC}", uut.toString());
     }
 
     // Get invalid property should fail.

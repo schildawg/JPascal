@@ -72,7 +72,7 @@ public class Console {
         var text = SourceCode.INSTANCE.getLine(file, line);
 
         var lineLength = String.valueOf(line).length();
-        write(ANSI_WHITE + "[" + ANSI_RED + "ERROR" + ANSI_WHITE + "] " + ANSI_RESET + err.getMessage());
+        write(ANSI_WHITE + "[" + ANSI_RED + "ERROR" + ANSI_WHITE + "] " + ANSI_RESET + err.token.fileName + ": " + err.getMessage());
         write(ANSI_WHITE + "[" + ANSI_RED + "ERROR" + ANSI_WHITE + "] " + ANSI_RESET + line + " ║ " + text);
         write(ANSI_WHITE + "[" + ANSI_RED + "ERROR" + ANSI_RESET + "] " + " ".repeat(lineLength) + " ║"  + ANSI_RED + " ".repeat(err.token.offset + 1) + "^".repeat(err.token.lexeme.length()) + ANSI_RESET);
     }

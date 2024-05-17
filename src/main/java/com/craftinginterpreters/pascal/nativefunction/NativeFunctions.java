@@ -67,6 +67,12 @@ public class NativeFunctions {
         return new PascalMap();
     }
 
+    /// Returns a Stack.
+    ///
+    public static PascalStack Stack() {
+        return new PascalStack();
+    }
+
 
     private static String stringify(Object object) {
         if (object == null) return "nil";

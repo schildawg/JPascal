@@ -261,7 +261,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
     public String type(Object obj) {
         if (obj == null) {
-            return "Any";
+            return "Nil";
         }
 
         var map = new HashMap<Class, String>();
@@ -270,6 +270,8 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         map.put(Boolean.class, "Boolean");
         map.put(Character.class, "Char");
         map.put(Double.class, "Double");
+        map.put(PascalList.class, "List");
+        map.put(PascalStack.class, "Stack");
 
         if (map.containsKey(obj.getClass()))  {
             return map.get(obj.getClass());
@@ -288,12 +290,10 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     @Override
     public Object visitCallExpr(Expr.Call expr) {
         var callee = lookupCall(expr.callee);
-
         List<Object> arguments = new ArrayList<>();
         for (Expr argument : expr.arguments) {
             arguments.add(evaluate(argument));
         }
-
         List<String> types = new ArrayList<>();
         for (var arg : arguments) {
             types.add(type(arg));
@@ -622,6 +622,16 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                 throw new RuntimeError(expr.token, e.getMessage());
             }
         }
+        else if (target instanceof PascalStack list) {
+            int index = Integer.parseInt(evaluate(expr.index).toString());
+
+            try {
+                return list.stack.get(index);
+            }
+            catch (RuntimeException e) {
+                throw new RuntimeError(expr.token, e.getMessage());
+            }
+        }
 
         throw new RuntimeError(expr.token, "Subscript target should be an ordinal.");
     }
@@ -662,7 +672,11 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         try {
             execute(stmt.tryBlock);
         }
+        catch (Return e) {
+            throw e;
+        }
         catch (RuntimeError e) {
+            //Console.error(e);
             // FIXME
             var ex = e.getMessage();
             Object value = e.value;

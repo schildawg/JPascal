@@ -1,5 +1,6 @@
 package com.craftinginterpreters.pascal;
 
+
 import java.util.HashMap;
 import java.util.List;
 
@@ -69,6 +70,12 @@ public abstract class Expr {
                     return "String";
                 }
             }
+
+            // FIXME
+            if (leftType == null) {
+                return rightType;
+            }
+
             if (!leftType.equals(rightType)) {
                 throw new RuntimeError(operator, "Type mismatch.");
             }
@@ -288,6 +295,9 @@ public abstract class Expr {
                 }
                 else if ("List".equalsIgnoreCase(name.lexeme)) {
                     return "List";
+                }
+                else if ("Stack".equalsIgnoreCase(name.lexeme)) {
+                    return "Stack";
                 }
                 return "Any";
                 //throw new RuntimeException(name.lexeme + " " + name.fileName + name.line);
