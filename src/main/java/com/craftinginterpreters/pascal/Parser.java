@@ -83,7 +83,12 @@ public class Parser {
     }
 
     protected Expr expression() {
-        return assignment();
+        var expr = assignment();
+        if (match(AS)) {
+            var type = consume(IDENTIFIER, "Expect typecast identifier.");
+            expr.cast = type.lexeme;
+        }
+        return expr;
     }
 
     private Stmt declaration() {

@@ -9,7 +9,7 @@ class TypeChecker implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
      private Stmt.Function currentFunction = null;
      private ClassType currentClass = ClassType.NONE;
 
-     private final TypeLookup lookup = new TypeLookup();
+     public final static TypeLookup lookup = new TypeLookup();
 
     TypeChecker() {
         lookup.inferred = new TypeLookup();
@@ -36,9 +36,9 @@ class TypeChecker implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     private void mapType(Stmt stmt) {
         if (stmt instanceof Stmt.Enum e) {
             for (var value : e.values) {
-                if (lookup.getType(value.lexeme) != null) {
-                    throw new RuntimeException(value.lexeme + "already exists!!!");
-                }
+//                if (lookup.getType(value.lexeme) != null) {
+//                    throw new RuntimeException(value.lexeme + " already exists!!!");
+//                }
                 lookup.setType(value.lexeme, e.name.lexeme);
             }
         }
@@ -143,6 +143,9 @@ class TypeChecker implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             throw new RuntimeError(stmt.keyword, "Can't return value from procedure.");
         }
         var exitType = stmt.value.reduce(lookup);
+        if (exitType == null) {
+            return null;
+        }
         var returnType = currentFunction.returnType;
 
         if ("any".equalsIgnoreCase(returnType)) return null;
@@ -214,10 +217,15 @@ class TypeChecker implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
     @Override
     public Void visitAssignExpr(Expr.Assign expr) {
         resolve(expr.value);
+
         var type = lookup.getType(expr.name.lexeme);
         if (type == null) {
             return null;
             //throw new RuntimeError(expr.name, "Type not defined!");
+        }
+
+        if (type.equalsIgnoreCase(expr.cast)) {
+            return null;
         }
 
         var inferred = expr.value.reduce(lookup);
@@ -241,6 +249,7 @@ class TypeChecker implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
             parent = lookup.parents.getType(parent);
         }
 
+        System.out.println("CAST IS: " + expr.cast);
         System.out.println(type + " != " + inferred);
         throw new RuntimeError(expr.name, "Type mismatch!");
     }
@@ -307,12 +316,22 @@ class TypeChecker implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         var expected = lookup.getType(expr.name.lexeme);
         var inferred = expr.value.reduce(lookup);
 
+//        Console.debug("expr cast " + expr.cast);
+//        Console.debug("inferred cast " + expr.value.cast);
+
+
         resolve(expr.value);
         resolve(expr.object);
 
         if (expected == null || "any".equalsIgnoreCase(expected)) return null;
+        if (expected.equalsIgnoreCase(expr.cast)) {
+            return null;
+        }
+
+        if (inferred.equalsIgnoreCase("Nil")) return null;
+
         if (!expected.equalsIgnoreCase(inferred)) {
-            System.out.println(expected + " != " + inferred);
+            System.out.println("(SetExpr) " + expected + " != " + inferred);
             throw new RuntimeError(expr.name, "Type mismatch.");
         }
         return null;

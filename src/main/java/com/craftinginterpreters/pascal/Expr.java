@@ -54,6 +54,8 @@ public abstract class Expr {
         final Expr right;
 
         public String reduce(TypeLookup lookup) {
+            if (cast != null)  return cast;
+
             if (operator.type == TokenType.LESS || operator.type == TokenType.LESS_EQUAL || operator.type == TokenType.GREATER || operator.type == TokenType.GREATER_EQUAL || operator.type == TokenType.EQUAL || operator.type == TokenType.NOT_EQUAL) {
                 // TODO: Add checking
                 return "Boolean";
@@ -100,6 +102,8 @@ public abstract class Expr {
         final List<Expr> arguments;
 
         public String reduce(TypeLookup lookup) {
+            if (cast != null)  return cast;
+
             var result = callee.reduce(lookup);
             if (callee instanceof Expr.Variable e) {
                 // TODO: Make this better
@@ -135,6 +139,8 @@ public abstract class Expr {
         }
 
         public String reduce(TypeLookup lookup) {
+            if (cast != null)  return cast;
+
             var type = expr.reduce(lookup);
             if ("string".equalsIgnoreCase(type)) {
                 return "Char";
@@ -168,6 +174,8 @@ public abstract class Expr {
         final Token name;
 
         public String reduce(TypeLookup lookup) {
+            if (cast != null)  return cast;
+
             var klass = object.reduce(lookup);
 
             if ("any".equalsIgnoreCase(klass)) {
@@ -191,6 +199,8 @@ public abstract class Expr {
         final Expr expression;
 
         public String reduce(TypeLookup lookup) {
+            if (cast != null)  return cast;
+
             return expression.reduce(lookup);
         }
     }
@@ -208,6 +218,12 @@ public abstract class Expr {
         final Object value;
 
         public String reduce(TypeLookup lookup) {
+            if (cast != null)  return cast;
+
+            if (value == null) {
+                return "Nil";
+            }
+
             var map = new HashMap<Class, String>();
             map.put(String.class, "String");
             map.put(Integer.class, "Integer");
@@ -256,6 +272,8 @@ public abstract class Expr {
         final Expr right;
 
         public String reduce(TypeLookup lookup) {
+            if (cast != null)  return cast;
+
             var leftType = left.reduce(lookup);
             var rightType = right.reduce(lookup);
 
@@ -283,6 +301,8 @@ public abstract class Expr {
         final Token name;
 
         public String reduce(TypeLookup lookup) {
+            if (cast != null)  return cast;
+
             if (lookup.getType(name.lexeme) == null) {
                 if ("Str".equalsIgnoreCase(name.lexeme)) {
                     return "String";
@@ -299,6 +319,10 @@ public abstract class Expr {
                 else if ("Stack".equalsIgnoreCase(name.lexeme)) {
                     return "Stack";
                 }
+                else if ("Map".equalsIgnoreCase(name.lexeme)) {
+                    return "Map";
+                }
+
                 return "Any";
                 //throw new RuntimeException(name.lexeme + " " + name.fileName + name.line);
             }
@@ -387,12 +411,18 @@ public abstract class Expr {
         final Expr right;
 
         public String reduce(TypeLookup lookup) {
+            if (cast != null)  return cast;
+
             return right.reduce(lookup);
         }
     }
 
     abstract <R> R accept(Visitor<R> visitor);
     public String reduce(TypeLookup lookup) {
+        if (cast != null)  return cast;
+
         return "Any";
     }
+
+    public String cast;
 }

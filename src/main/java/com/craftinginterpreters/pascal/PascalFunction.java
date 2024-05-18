@@ -73,11 +73,23 @@ public class PascalFunction implements PascalCallable {
             if ("any".equalsIgnoreCase(token.lexeme)) continue;
 
             if (!token.lexeme.equalsIgnoreCase(args.get(i))) {
-                return false;
+                return isAssignable(token.lexeme ,args.get(i));
             }
             i++;
         }
         return true;
+    }
+
+    private boolean isAssignable(String c1, String c2) {
+        // Yeah, I'm not proud of this logic :D
+        var parent = TypeChecker.lookup.parents.getType(c2);
+        while (parent != null) {
+            if (c1.equalsIgnoreCase(parent)) {
+                return true;
+            }
+            parent = TypeChecker.lookup.parents.getType(parent);
+        }
+        return false;
     }
 
     public PascalFunction match(List<String> args) {
